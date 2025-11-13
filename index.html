@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Portfolio</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: #fff8ef;
+      color: #333;
+      line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 5%;
+    }
+
+    nav .logo {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #e67e22;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #e67e22;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 3rem 5%;
+      background: #fdf5e6;
+      border-radius: 20px;
+      margin: 1rem;
+    }
+
+    .profile-pic {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 2rem;
+    }
+
+    .intro h2 {
+      font-size: 2rem;
+    }
+
+    .intro span {
+      color: #e67e22;
+    }
+
+    .social-links {
+      margin-top: 1rem;
+    }
+
+    .social-links a {
+      margin-right: 1rem;
+      color: #e67e22;
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.3s;
+    }
+
+    .social-links a:hover {
+      opacity: 0.7;
+    }
+
+    section {
+      padding: 3rem 5%;
+      text-align: center;
+    }
+
+    .skills-grid, .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .skill, .project-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .skill:hover, .project-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .project-card img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 1rem;
+      background: #e67e22;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #cf711f;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #fdf5e6;
+      color: #555;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <h1 class="logo">YourName</h1>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="hero">
+      <img src="your-photo.jpg" alt="Your photo" class="profile-pic" />
+      <div class="intro">
+        <h2>Hey there, I’m <span>Your Name</span></h2>
+        <p>Creative Web Designer & Developer</p>
+        <div class="social-links">
+          <a href="https://github.com/yourusername" target="_blank">GitHub</a>
+          <a href="https://linkedin.com/in/yourusername" target="_blank">LinkedIn</a>
+          <a href="https://twitter.com/yourusername" target="_blank">Twitter</a>
+          <a href="https://instagram.com/yourusername" target="_blank">Instagram</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="about">
+    <h3>About Me</h3>
+    <p>
+      I’m a passionate designer and developer focused on creating clean, minimal, and user-friendly digital experiences.
+      I enjoy combining aesthetics with functionality to deliver high-quality web projects.
+    </p>
+  </section>
+
+  <section id="skills">
+    <h3>What I Do</h3>
+    <div class="skills-grid">
+      <div class="skill">
+        <h4>Website Design</h4>
+        <p>Beautiful, responsive web designs that bring ideas to life.</p>
+      </div>
+      <div class="skill">
+        <h4>Frontend Development</h4>
+        <p>Clean, optimized code with modern frameworks and tools.</p>
+      </div>
+      <div class="skill">
+        <h4>Brand Identity</h4>
+        <p>Creating memorable brand experiences through design.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects">
+    <h3>My Work</h3>
+    <div class="project-grid">
+      <div class="project-card">
+        <img src="project1.jpg" alt="Project 1" />
+        <h4>Portfolio Website</h4>
+      </div>
+      <div class="project-card">
+        <img src="project2.jpg" alt="Project 2" />
+        <h4>Mobile App Design</h4>
+      </div>
+      <div class="project-card">
+        <img src="project3.jpg" alt="Project 3" />
+        <h4>Brand Logo Concept</h4>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h3>Contact Me</h3>
+    <p>Let’s collaborate! Feel free to reach out for projects or just to say hi.</p>
+    <a href="mailto:yourname@example.com" class="btn">Say Hello</a>
+  </section>
+
+  <footer>
+    <p>© 2025 Your Name. All Rights Reserved.</p>
+  </footer>
+
+  <script>
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function(e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute("href")).scrollIntoView({
+          behavior: "smooth"
+        });
+      });
+    });
+  </script>
+</body>
+</html>
