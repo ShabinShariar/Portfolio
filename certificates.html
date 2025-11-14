@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificates – Shabin Shariar</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: #fff8ef;
+      padding: 2rem 5%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e67e22;
+      margin-bottom: 2rem;
+    }
+
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .cert-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+
+    .cert-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .cert-card img {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .cert-info {
+      text-align: left;
+    }
+
+    .cert-info h3 {
+      color: #e67e22;
+      margin-bottom: 0.5rem;
+    }
+
+    .cert-info p {
+      margin-bottom: 0.3rem;
+      color: #444;
+      font-size: 0.95rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      background: #e67e22;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      background: #cf711f;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>My Certificates</h1>
+
+  <div class="cert-grid">
+
+    <!-- Certificate Box Template -->
+    <div class="cert-card">
+      <img src="certificates/cert1.jpg" alt="Certificate 1">
+      <div class="cert-info">
+        <h3>Course Title Here</h3>
+        <p><strong>Platform:</strong> Coursera / Udemy / DIU</p>
+        <p><strong>Date Earned:</strong> 12 July 2024</p>
+        <p><strong>Details:</strong> Successfully completed with full marks. Learned fundamentals and advanced concepts.</p>
+      </div>
+    </div>
+
+    <div class="cert-card">
+      <img src="certificates/cert2.jpg" alt="Certificate 2">
+      <div class="cert-info">
+        <h3>Course Title Here</h3>
+        <p><strong>Platform:</strong> Coursera / Udemy / DIU</p>
+        <p><strong>Date Earned:</strong> 22 March 2024</p>
+        <p><strong>Details:</strong> Completed with hands-on project and practical experience.</p>
+      </div>
+    </div>
+
+    <div class="cert-card">
+      <img src="certificates/cert3.jpg" alt="Certificate 3">
+      <div class="cert-info">
+        <h3>Course Title Here</h3>
+        <p><strong>Platform:</strong> Coursera / Udemy / DIU</p>
+        <p><strong>Date Earned:</strong> 03 June 2023</p>
+        <p><strong>Details:</strong> Learned advanced tools and real-life workflow processes.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <center>
+    <a href="index.html" class="back-btn">← Back to Portfolio</a>
+  </center>
+
+</body>
+</html>
