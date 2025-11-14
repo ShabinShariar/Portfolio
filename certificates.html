@@ -24,11 +24,25 @@
       margin-bottom: 2rem;
     }
 
-    .cert-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-    }
+   .cert-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* auto-fit এর পরিবর্তে fixed 3 columns */
+  gap: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .cert-grid {
+    grid-template-columns: repeat(2, 1fr); /* medium screens - 2 per row */
+  }
+}
+
+@media (max-width: 600px) {
+  .cert-grid {
+    grid-template-columns: 1fr; /* small screens - 1 per row */
+  }
+}
+
 
     .cert-card {
       background: #ffffff;
