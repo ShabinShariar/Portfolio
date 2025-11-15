@@ -146,12 +146,72 @@
       color: #555;
       font-size: 0.9rem;
     }
+    /* Hamburger Icon */
+.hamburger {
+  font-size: 2rem;
+  cursor: pointer;
+  display: none;
+  color: #e67e22;
+}
+
+/* Sidebar menu */
+.side-menu {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: #fff0d9;
+  overflow-x: hidden;
+  padding-top: 60px;
+  transition: 0.4s;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.2);
+  z-index: 999;
+}
+
+.side-menu a {
+  display: block;
+  padding: 12px 20px;
+  text-decoration: none;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.side-menu a:hover {
+  background: #e67e22;
+  color: white;
+}
+
+/* Show hamburger only on mobile */
+@media (max-width: 768px) {
+  nav ul {
+    display: none;
+  }
+  .hamburger {
+    display: block;
+  }
+}
+
   </style>
 </head>
 <body>
+  <div id="sideMenu" class="side-menu">
+  <a href="index.html">Home</a>
+  <a href="certificates.html">Achievements</a>
+  <a href="#projects">Projects</a>
+  <a href="#skills">Skills</a>
+  <a href="#about">About</a>
+  <a href="#contact">Contact</a>
+</div>
+
   <header>
     <nav>
       <h1 class="logo">Assalamu Alaikum</h1>
+      <div class="hamburger" onclick="toggleMenu()">
+  ☰
+</div>
+
       <ul>
         <li><a href="#about">About</a></li>
         <li><a href="#skills">Skill</a></li>
@@ -230,6 +290,7 @@
   </footer>
 
   <script>
+    
     // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener("click", function(e) {
@@ -240,5 +301,16 @@
       });
     });
   </script>
+  <script>
+  function toggleMenu() {
+    const menu = document.getElementById("sideMenu");
+    if (menu.style.width === "250px") {
+      menu.style.width = "0";
+    } else {
+      menu.style.width = "250px";
+    }
+  }
+</script>
+
 </body>
 </html>
