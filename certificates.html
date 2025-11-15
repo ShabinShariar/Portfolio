@@ -124,6 +124,17 @@
   font-weight: bold;
   cursor: pointer;
 }
+    /* Hover Zoom Effect for Popup Image */
+.popup-content {
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+}
+
+.popup-content:hover {
+  transform: scale(1.5); /* Zoom level */
+  cursor: zoom-out;
+}
+
   </style>
 </head>
 <body>
@@ -181,6 +192,21 @@
   <center>
     <a href="index.html" class="back-btn">← Back to Portfolio</a>
   </center>
+<!-- Image Popup Modal -->
+<div id="popupModal" class="popup">
+  <span class="close" onclick="closePopup()">&times;</span>
+  <img class="popup-content" id="popupImage">
+</div>
+<script>
+function openPopup(src) {
+  document.getElementById("popupModal").style.display = "block";
+  document.getElementById("popupImage").src = src;
+}
+
+function closePopup() {
+  document.getElementById("popupModal").style.display = "none";
+}
+</script>
 <!-- Image Popup Modal -->
 <div id="popupModal" class="popup">
   <span class="close" onclick="closePopup()">&times;</span>
