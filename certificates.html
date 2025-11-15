@@ -91,6 +91,39 @@
     .back-btn:hover {
       background: #cf711f;
     }
+    /* Popup Background */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  padding-top: 60px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.8);
+}
+
+/* Popup Image */
+.popup-content {
+  margin: auto;
+  display: block;
+  width: 80%;
+  max-width: 900px;
+  border-radius: 10px;
+}
+
+/* Close Button */
+.close {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
   </style>
 </head>
 <body>
@@ -101,7 +134,7 @@
 
     <!-- Certificate Box Template -->
     <div class="cert-card">
-      <img src="image2/certificates1.jpg" alt="Certificate 1">
+      <img src="image2/certificates1.jpg" onclick="openPopup(this.src)" alt="Certificate 1">
       <div class="cert-info">
         <h3>Career Essentials in Data Analysis by
  Microsoft and LinkedIn</h3>
@@ -112,7 +145,7 @@
     </div>
 
     <div class="cert-card">
-      <img src="image2/certificates2.jpg" alt="Certificate 2">
+      <img src="image2/certificates2.jpg" onclick="openPopup(this.src)" alt="Certificate 2">
       <div class="cert-info">
         <h3>Professional Data Entry </h3>
         <p><strong>Platform:</strong> Master IT Institute</p>
@@ -122,7 +155,7 @@
     </div>
 
     <div class="cert-card">
-      <img src="image2/certificates3.jpg" alt="Certificate 3">
+      <img src="image2/certificates3.jpg" onclick="openPopup(this.src)" alt="Certificate 3">
       <div class="cert-info">
         <h3>Internship in Textile Industry: Tips & Tricks</h3>
         <p><strong>Platform:</strong> GoEdu</p>
@@ -133,7 +166,7 @@
 
      <!-- Row 2 -->
   <div class="cert-card">
-    <img src="image2/certificates6.jpg" alt="Certificate 4">
+    <img src="image2/certificates6.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
     <div class="cert-info">
       <h3>Excel for Beginners</h3>
       <p><strong>Platform:</strong> Great Learning</p>
@@ -148,6 +181,21 @@
   <center>
     <a href="index.html" class="back-btn">← Back to Portfolio</a>
   </center>
+<!-- Image Popup Modal -->
+<div id="popupModal" class="popup">
+  <span class="close" onclick="closePopup()">&times;</span>
+  <img class="popup-content" id="popupImage">
+</div>
+<script>
+function openPopup(src) {
+  document.getElementById("popupModal").style.display = "block";
+  document.getElementById("popupImage").src = src;
+}
+
+function closePopup() {
+  document.getElementById("popupModal").style.display = "none";
+}
+</script>
 
 </body>
 </html>
