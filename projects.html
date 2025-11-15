@@ -1,1 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: #fff8ef;
+      padding: 2rem 5%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e67e22;
+      margin-bottom: 2rem;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .project-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .project-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .project-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .project-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .project-card img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      background: #e67e22;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      background: #cf711f;
+    }
+  </style>
+</head>
+<body>
+
+<h1>My Projects</h1>
+
+<div class="project-grid">
+
+  <!-- Project Card Example -->
+  <div class="project-card" onclick="window.location.href='project1.html'">
+    <img src="image2/project1.jpg" alt="Project 1">
+  </div>
+
+  <div class="project-card" onclick="window.location.href='project2.html'">
+    <img src="image2/project2.jpg" alt="Project 2">
+  </div>
+
+  <div class="project-card" onclick="window.location.href='project3.html'">
+    <img src="image2/project3.jpg" alt="Project 3">
+  </div>
+
+</div>
+
+<center>
+  <a href="index.html" class="back-btn">← Back to Portfolio</a>
+</center>
+
+</body>
+</html>
 
