@@ -1,1 +1,215 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proillustrator – Shabin Shariar</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🪪</text></svg>">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: #fff8ef;
+      padding: 2rem 5%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e67e22;
+      margin-bottom: 2rem;
+    }
+
+   .cert-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* auto-fit এর পরিবর্তে fixed 3 columns */
+  gap: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .cert-grid {
+    grid-template-columns: repeat(2, 1fr); /* medium screens - 2 per row */
+  }
+}
+
+@media (max-width: 600px) {
+  .cert-grid {
+    grid-template-columns: 1fr; /* small screens - 1 per row */
+  }
+}
+
+
+    .cert-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+
+    .cert-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .cert-card img {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .cert-info {
+      text-align: left;
+    }
+
+    .cert-info h3 {
+      color: #e67e22;
+      margin-bottom: 0.5rem;
+    }
+
+    .cert-info p {
+      margin-bottom: 0.3rem;
+      color: #444;
+      font-size: 0.95rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      background: #e67e22;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      background: #cf711f;
+    }
+    /* Popup Background */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  padding-top: 60px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.8);
+}
+
+/* Popup Image */
+.popup-content {
+  margin: auto;
+  display: block;
+  width: 80%;
+  max-width: 900px;
+  border-radius: 10px;
+}
+
+/* Close Button */
+.close {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+    /* Hover Zoom Effect for Popup Image */
+.popup-content {
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+}
+
+.popup-content:hover {
+  transform: scale(1.5); /* Zoom level */
+  cursor: zoom-out;
+}
+
+  </style>
+</head>
+<body>
+
+  <h1>My Certificates</h1>
+
+  <div class="cert-grid">
+
+    <!-- Certificate Box Template -->
+    <div class="cert-card">
+      <img src="image2/certificates1.jpg" onclick="openPopup(this.src)" alt="Certificate 1">
+      <div class="cert-info">
+        <h3>Career Essentials in Data Analysis by
+ Microsoft and LinkedIn</h3>
+        <p><strong>Platform:</strong> linkedin learning</p>
+        <p><strong>Date Earned:</strong> Sep 09, 2024</p>
+        <p><strong>Details:</strong> If I succeed in this, I will consider it a true accomplishment. Through this process, I have learned many valuable things—how to analyze data effectively, how to organize information efficiently within a short period of time, and how to arrive at strong, well-reasoned conclusions. I have also gained many other important insights along the way.</p>
+      </div>
+    </div>
+
+    <div class="cert-card">
+      <img src="image2/certificates2.jpg" onclick="openPopup(this.src)" alt="Certificate 2">
+      <div class="cert-info">
+        <h3>Professional Data Entry </h3>
+        <p><strong>Platform:</strong> Master IT Institute</p>
+        <p><strong>Date Earned:</strong> Sep 10, 2024</p>
+        <p><strong>Details:</strong> Through this course, I have learned several valuable skills. I gained hands-on experience with various tools that can be effectively used for data analysis. I also learned how to generate different types of leads and apply practical strategies to improve overall efficiency. Along with these, I acquired many other important insights that have strengthened my understanding and enhanced my capabilities.</p>
+      </div>
+    </div>
+
+    <div class="cert-card">
+      <img src="image2/certificates3.jpg" onclick="openPopup(this.src)" alt="Certificate 3">
+      <div class="cert-info">
+        <h3>Internship in Textile Industry: Tips & Tricks</h3>
+        <p><strong>Platform:</strong> GoEdu</p>
+        <p><strong>Date Earned:</strong> May 08, 2025</p>
+        <p><strong>Details:</strong> This certificate from GoEdu recognizes Me for completing the course “Internship in Textile Industry: Tips & Tricks” with distinction on May 8, 2025, under instructor Mr. Tanvir Ahmed Chowdhury, in association with Skill Jobs and HRDI.</p>
+      </div>
+    </div>
+
+     <!-- Row 2 -->
+  <div class="cert-card">
+    <img src="image2/certificates6.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
+    <div class="cert-info">
+      <h3>Excel for Beginners</h3>
+      <p><strong>Platform:</strong> Great Learning</p>
+      <p><strong>Date Earned:</strong> September 2024</p>
+      <p><strong>Details:</strong> Through this request, I was able to learn various essential aspects of Microsoft Excel. Even though it may not be extremely important or something that will drastically change things for me, it has certainly expanded my knowledge to some extent.</p>
+    </div>
+  </div>
+
+
+ </div>
+
+  <center>
+    <a href="index.html" class="back-btn">← Back to Portfolio</a>
+  </center>
+<!-- Image Popup Modal -->
+<div id="popupModal" class="popup">
+  <span class="close" onclick="closePopup()">&times;</span>
+  <img class="popup-content" id="popupImage">
+</div>
+  
+<script>
+function openPopup(src) {
+  document.getElementById("popupModal").style.display = "block";
+  document.getElementById("popupImage").src = src;
+}
+
+function closePopup() {
+  document.getElementById("popupModal").style.display = "none";
+}
+</script>
+
+</body>
+</html>
+
