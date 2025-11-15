@@ -147,16 +147,6 @@
       font-size: 0.9rem;
     }
 
-    /* Hamburger Icon */
-    .hamburger {
-      font-size: 2rem;
-      cursor: pointer;
-      display: none;
-      color: #e67e22;
-      z-index: 1001;
-      position: relative;
-    }
-
     /* Sidebar menu */
     .side-menu {
       height: 100%;
@@ -186,15 +176,24 @@
       color: white;
     }
 
-    /* Show hamburger only on mobile */
+    /* Hamburger icon always top-left */
+    .hamburger {
+      font-size: 2rem;
+      cursor: pointer;
+      color: #e67e22;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1001;
+    }
+
+    /* Hide regular nav ul on small screens */
     @media (max-width: 768px) {
       nav ul {
         display: none;
       }
-      .hamburger {
-        display: block;
-      }
     }
+
   </style>
 </head>
 <body>
@@ -209,12 +208,12 @@
     <a href="#contact">Contact</a>
   </div>
 
+  <!-- Hamburger Icon -->
+  <div class="hamburger" onclick="toggleMenu()">☰</div>
+
   <header>
     <nav>
       <h1 class="logo">Assalamu Alaikum</h1>
-      <!-- Hamburger Icon -->
-      <div class="hamburger" onclick="toggleMenu()">☰</div>
-
       <ul>
         <li><a href="#about">About</a></li>
         <li><a href="#skills">Skill</a></li>
@@ -231,7 +230,7 @@
         <p>Textile Engineering Student </p>
         <div class="social-links">
           <a href="https://www.linkedin.com/in/shabin-shariar-797a72323" target="_blank">LinkedIn</a>
-          <a href="https://www.youtube.com/@thinkouside/videos" target="_blank">Youtube Channel</a>
+          <a href="https://www.youtube.com/@thinkouside/videos" target="_blank">YouTube Channel</a>
         </div>
       </div>
     </div>
@@ -248,16 +247,9 @@
   <section id="skills">
     <h3>What I Do</h3>
     <div class="skills-grid">
-      <div class="skill">
-        <h4>MS Office Expert</h4>
-      </div>
-      <div class="skill">
-        <h4>Logo Designer, Video Editor</h4>
-      </div>
-      <div class="skill">
-        <h4>Data Entry Operator</h4>
-        <p>Work In Fiverr, Other Projects.</p>
-      </div>
+      <div class="skill"><h4>MS Office Expert</h4></div>
+      <div class="skill"><h4>Logo Designer, Video Editor</h4></div>
+      <div class="skill"><h4>Data Entry Operator</h4><p>Work on Fiverr, Other Projects.</p></div>
     </div>
   </section>
 
@@ -293,7 +285,7 @@
   </footer>
 
   <script>
-    // Smooth scroll
+    // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener("click", function(e) {
         e.preventDefault();
@@ -313,6 +305,5 @@
       }
     }
   </script>
-
 </body>
 </html>
