@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shabin Shariar – Portfolio</title>
- <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🤓</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🤓</text></svg>">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins", sans-serif; }
   body { background:#fff8ef; color:#333; line-height:1.6; scroll-behavior:smooth; }
@@ -88,10 +88,47 @@
   .social-links a:hover { opacity:0.7; }
 
   section { padding:3rem 5%; text-align:center; }
+
+  /* Skills & Projects grids */
   .skills-grid, .project-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1.5rem; margin-top:2rem; }
-  .skill, .project-card { background:white; border-radius:12px; padding:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:transform 0.3s, box-shadow 0.3s; }
-  .skill:hover, .project-card:hover { transform:translateY(-5px); box-shadow:0 6px 15px rgba(0,0,0,0.15); }
-  .project-card img { width:100%; border-radius:8px; margin-bottom:1rem; }
+
+  /* Project cards: fixed reasonable size, centered, clickable */
+  .project-grid {
+    justify-items: center; /* so cards center when extra space */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .project-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+    max-width: 320px; /* prevents cards becoming too wide on large screens */
+  }
+  .project-card {
+    background:white;
+    border-radius:12px;
+    padding:0;
+    height:220px; /* fixed card height */
+    overflow:hidden;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.25s, box-shadow 0.25s;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .project-card:hover { transform: translateY(-6px); box-shadow:0 8px 18px rgba(0,0,0,0.15); }
+
+  .project-card img {
+    width:100%;
+    height:100%;
+    object-fit:cover; /* cover ensures image fills the card and crops elegantly */
+    display:block;
+  }
+
+  /* Remove visible text under cards (no headings) */
+  .project-card .title { display:none; }
+
   .btn { display:inline-block; margin-top:1rem; background:#e67e22; color:#fff; padding:0.8rem 1.5rem; border-radius:8px; text-decoration:none; transition:background 0.3s; }
   .btn:hover { background:#cf711f; }
   footer { text-align:center; padding:1rem; background:#fdf5e6; color:#555; font-size:0.9rem; }
@@ -99,6 +136,8 @@
   @media(max-width:768px){
     .hero{flex-direction:column;}
     .top-right-menu{display:none;} /* hide top-right links on mobile, use hamburger */
+    .project-card { height:180px; } /* slightly smaller on mobile */
+    .profile-pic { margin-right:0; margin-bottom:1rem; }
   }
 </style>
 </head>
@@ -135,8 +174,8 @@
     <h2>Hey there, I’m <span>Shabin Shariar</span></h2>
     <p>Textile Engineering Student</p>
     <div class="social-links">
-      <a href="https://www.linkedin.com/in/shabin-shariar-797a72323" target="_blank">LinkedIn</a>
-      <a href="https://www.youtube.com/@thinkouside/videos" target="_blank">Youtube Channel</a>
+      <a href="https://www.linkedin.com/in/shabin-shariar-797a72323" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://www.youtube.com/@thinkouside/videos" target="_blank" rel="noopener">Youtube Channel</a>
     </div>
   </div>
 </div>
@@ -151,18 +190,9 @@
 <section id="skills">
   <h3>What I Do</h3>
   <div class="skills-grid">
-    <div class="skill">
-      <h4>MS Office Expert</h4>
-    </div>
-
-    <div class="skill">
-      <h4>Logo Designer, Video Editor</h4>
-    </div>
-
-    <div class="skill">
-      <h4>Data Entry Operator</h4>
-      <p>Work In Fiverr, Other Projects.</p>
-    </div>
+    <div class="skill"><h4>MS Office Expert</h4></div>
+    <div class="skill"><h4>Logo Designer, Video Editor</h4></div>
+    <div class="skill"><h4>Data Entry Operator</h4><p>Work In Fiverr, Other Projects.</p></div>
   </div>
 </section>
 
@@ -170,21 +200,25 @@
 <section id="projects">
   <h3>This Section For My University Friends</h3>
   <div class="project-grid">
-    <div class="project-card">
-      <img src="image/shabinp4.png" alt="Project 1">
-      <h4>Class Schedule</h4>
-      <a href="https://docs.google.com/spreadsheets/d/1axNy8nFbha9V-2gXsx9id9DXRPOG_F8XizWUSnc03wI/edit?usp=sharing" target="_blank">Update</a>
-    </div>
-    <div class="project-card">
-      <img src="image/shabinp3.png" alt="Project 2">
-      <h4>Recorded Class</h4>
-      <a href="https://docs.google.com/spreadsheets/d/1vtDvtolhkzeRAh4ftKKu4tREr34S-K6ap7w5YdQJZHo/edit?usp=sharing" target="_blank">HERE List</a>
-    </div>
-    <div class="project-card">
-      <img src="image/shabinp2.png" alt="Project 3">
-      <h4>All Course Modules</h4>
-      <a href="https://drive.google.com/drive/folders/1BGzFIrH8qDduSXlaLFDGm9JgvIi7aiKr?usp=sharing" target="_blank">HERE</a>
-    </div>
+    <!-- Each card is a link; no text below the image -->
+    <a class="project-link" href="https://docs.google.com/spreadsheets/d/1axNy8nFbha9V-2gXsx9id9DXRPOG_F8XizWUSnc03wI/edit?usp=sharing" target="_blank" rel="noopener" aria-label="Class Schedule">
+      <div class="project-card" role="img" aria-hidden="true">
+        <img src="image/shabinp4.png" alt="Class Schedule preview">
+      </div>
+    </a>
+
+    <a class="project-link" href="https://docs.google.com/spreadsheets/d/1vtDvtolhkzeRAh4ftKKu4tREr34S-K6ap7w5YdQJZHo/edit?usp=sharing" target="_blank" rel="noopener" aria-label="Recorded Class list">
+      <div class="project-card" role="img" aria-hidden="true">
+        <img src="image/shabinp3.png" alt="Recorded Class preview">
+      </div>
+    </a>
+
+    <a class="project-link" href="https://drive.google.com/drive/folders/1BGzFIrH8qDduSXlaLFDGm9JgvIi7aiKr?usp=sharing" target="_blank" rel="noopener" aria-label="All Course Modules">
+      <div class="project-card" role="img" aria-hidden="true">
+        <img src="image/shabinp2.png" alt="All Course Modules preview">
+      </div>
+    </a>
+
   </div>
 </section>
 
