@@ -1,15 +1,24 @@
+<!-- এটি একটি HTML5 ডকুমেন্ট তা ব্রাউজারকে বুঝিয়ে দেয় -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ওয়েবসাইটের মেটাডেটা, ক্যারেক্টার সেট এবং রেসপন্সিভ ভিউপোর্টের সেটিং -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ব্রাউজারের ট্যাবে ওয়েবসাইটের যে নাম দেখাবে -->
 <title>Shabin Shariar – Portfolio</title>
+
+<!-- ব্রাউজারের ট্যাবে টাইটেলের পাশে যে ইমোজি বা আইকন দেখাবে -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>😊</text></svg>">
+
+<!-- ওয়েবসাইটের ডিজাইন বা CSS শুরু -->
 <style>
+  /* ওয়েবসাইটের সব ডিফল্ট মার্জিন ও প্যাডিং জিরো করা এবং ফন্ট স্টাইল সেট করা */
   * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins", sans-serif; }
 
   /* =========================================
-     CSS Variables for Light & Dark Mode
+     লাইট এবং ডার্ক থিমের জন্য কালার ভেরিয়েবল (যাতে সহজে কালার পরিবর্তন করা যায়)
   ========================================= */
   :root {
     --bg-color: #f8fafc;
@@ -24,6 +33,7 @@
     --shadow-strong: rgba(0,0,0,0.08);
   }
 
+  /* ডার্ক থিম একটিভ হলে কালারগুলো কেমন হবে তার সেটিং */
   body.dark-theme {
     --bg-color: #0f172a;
     --text-color: #cbd5e1;
@@ -37,6 +47,7 @@
     --shadow-strong: rgba(56, 189, 248, 0.15);
   }
 
+  /* মূল বডির ডিজাইন ও ট্রানজিশন এনিমেশন */
   body { 
     background: var(--bg-color); 
     color: var(--text-color); 
@@ -45,20 +56,24 @@
     transition: background 0.4s ease, color 0.4s ease; 
   }
 
-  /* Top-left bar */
+  /* =========================================
+     টপ নেভিগেশন বার (মেনুবার) এর ডিজাইন
+  ========================================= */
   .top-left-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 15px 5%;
     background: var(--nav-bg); 
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px); /* পেছনের অংশ একটু ঘোলা দেখাবে */
     box-shadow: 0 2px 15px var(--shadow-light);
     position: sticky; 
     top: 0;
     z-index: 100;
     transition: background 0.4s ease;
   }
+  
+  /* হ্যামবার্গার (☰) মেনু আইকনের ডিজাইন */
   .hamburger {
     font-size: 2rem;
     cursor: pointer;
@@ -67,6 +82,8 @@
     transition: transform 0.3s ease;
   }
   .hamburger:hover { transform: scale(1.1); }
+  
+  /* ওয়েবসাইটের লোগো/নাম এর ডিজাইন */
   .logo {
     font-size: 1.5rem;
     font-weight: 700;
@@ -75,6 +92,7 @@
     transition: color 0.4s ease;
   }
 
+  /* ডার্ক/লাইট মোড চেঞ্জ করার বাটনের ডিজাইন */
   .theme-toggle {
     background: none;
     border: none;
@@ -87,6 +105,7 @@
   }
   .theme-toggle:hover { transform: rotate(20deg) scale(1.1); }
 
+  /* উপরের ডানদিকের মেনুগুলোর ডিজাইন */
   .top-right-menu {
     display: flex;
     gap: 2rem;
@@ -100,10 +119,12 @@
   }
   .top-right-menu a:hover { color: var(--primary-color); }
 
-  /* Sidebar */
+  /* =========================================
+     সাইডবার মেনু (মোবাইলে বা হ্যামবার্গারে ক্লিক করলে যা আসবে)
+  ========================================= */
   .side-menu {
     height: 100%;
-    width: 0;
+    width: 0; /* শুরুতে লুকানো থাকবে */
     position: fixed;
     top: 0;
     left: 0;
@@ -127,12 +148,12 @@
   .side-menu a:hover { color: var(--primary-color); padding-left: 40px; }
 
   /* =========================================
-     Hero & About Section (Side by Side)
+     হিরো সেকশন (প্রোফাইল পিকচার এবং এবাউট মি)
   ========================================= */
   .hero {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space between left and right column */
+    justify-content: space-between;
     padding: 4rem 5%;
     background: var(--card-bg);
     border-radius: 24px;
@@ -143,25 +164,31 @@
     gap: 3rem;
   }
 
-  /* Left Side: Photo + Intro */
+  /* হিরো সেকশনের বাম পাশ (ছবি ও নাম) */
   .hero-left {
     display: flex;
     align-items: center;
-    flex: 1.4;
+    flex: 1.5;
   }
+  
+  /* প্রোফাইল পিকচারের ডিজাইন */
   .profile-pic { 
-    width:180px; height:180px; 
-    border-radius:50%; object-fit:cover; margin-right:2.5rem; 
+    width:240px; height:240px; 
+    border-radius:50%; object-fit:cover; margin-right:3rem; 
     border: 4px solid var(--card-bg); 
-    box-shadow: 0 8px 25px var(--shadow-strong);
-    transition: border-color 0.4s ease;
-    flex-shrink: 0; /* Prevents image from shrinking */
+    box-shadow: 0 12px 35px var(--shadow-strong);
+    transition: transform 0.3s ease, border-color 0.4s ease;
+    flex-shrink: 0; 
   }
+  .profile-pic:hover {
+    transform: scale(1.05); /* হোভার করলে ছবি হালকা বড় হবে */
+  }
+  
+  /* নামের অংশ এবং সোশ্যাল লিংকস */
   .intro { text-align: left; }
   .intro h2 { font-size:2.3rem; color: var(--heading-color); margin-bottom: 0.2rem; transition: color 0.4s ease;}
   .intro h2 span { color: var(--primary-color); }
   .intro h4 { font-size: 1.1rem; color: var(--text-color); font-weight: 500; margin-bottom: 1rem; opacity: 0.9;}
-  
   .social-links { display: flex; gap: 1.5rem; }
   .social-links a { 
     color: var(--primary-color); text-decoration:none; font-weight:600; 
@@ -169,11 +196,11 @@
   }
   .social-links a:hover { color: var(--primary-hover); transform: translateY(-2px); }
 
-  /* Right Side: About Text */
+  /* হিরো সেকশনের ডান পাশ (About Me টেক্সট) */
   .hero-right {
     flex: 1;
     padding-left: 3rem;
-    border-left: 2px solid var(--border-color); /* Divider line */
+    border-left: 2px solid var(--border-color); /* মাঝখানের দাগ */
     transition: border-color 0.4s ease;
   }
   .hero-right h3 {
@@ -188,14 +215,17 @@
     line-height: 1.7;
   }
 
-  /* Shared Section Styles */
+  /* =========================================
+     কমন সেকশন স্টাইল (Skills, Projects, Contact এর জন্য)
+  ========================================= */
   section { padding:4rem 5%; text-align:center; }
   section h3 { font-size: 2rem; color: var(--heading-color); margin-bottom: 1rem; transition: color 0.4s ease;}
   section p { color: var(--text-color); max-width: 700px; margin: 0 auto 2rem auto; }
 
-  /* Skills & Projects */
+  /* স্কিল এবং প্রজেক্টের কার্ডগুলো গ্রিড আকারে সাজানোর জন্য */
   .skills-grid, .project-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:2rem; margin-top:2rem; }
 
+  /* প্রতিটি স্কিল বক্সের ডিজাইন */
   .skill {
     background: var(--card-bg);
     border-radius: 16px;
@@ -208,6 +238,7 @@
   .skill p { margin-bottom: 0; font-size: 0.95rem; }
   .skill:hover { transform: translateY(-8px); border-color: var(--primary-color); box-shadow: 0 15px 30px var(--shadow-strong); }
 
+  /* প্রতিটি প্রজেক্ট কার্ডের ডিজাইন */
   .project-grid { justify-items: center; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
   .project-link { text-decoration: none; color: inherit; display: block; width: 100%; max-width: 350px; }
   .project-card {
@@ -224,9 +255,10 @@
   .project-card:hover::after { opacity: 1; }
   .project-card img { width:100%; height:100%; object-fit:cover; display:block; transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
   .project-card:hover img { transform: scale(1.05); }
-  .project-card .title { display:none; }
 
-  /* Button */
+  /* =========================================
+     বাটনের ডিজাইন (Contact me বাটন)
+  ========================================= */
   .btn { 
     display:inline-block; margin-top:1.5rem; background: var(--primary-color); color: #ffffff; 
     padding:1rem 2rem; border-radius:12px; font-weight: 600; text-decoration:none; 
@@ -236,30 +268,28 @@
   body.dark-theme .btn:hover { background: #ffffff; color: #0f172a; }
   .btn:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 8px 20px var(--shadow-strong); }
 
+  /* ফুটারের ডিজাইন */
   footer { text-align:center; padding:2rem; background: var(--card-bg); border-top: 1px solid var(--border-color); color: var(--text-color); font-size:0.9rem; margin-top: 2rem; transition: background 0.4s ease, border-color 0.4s ease;}
 
   /* =========================================
-     Mobile Responsive Fixes
+     মোবাইল রেসপন্সিভ ফিক্স (ছোট স্ক্রিনের জন্য)
   ========================================= */
   @media(max-width:992px){
-    .hero{flex-direction:column; gap: 2rem; text-align: center;}
-    
-    /* Left Side Mobile Adjustments */
+    .hero{flex-direction:column; gap: 2rem; text-align: center;} /* হিরো সেকশন লম্বালম্বি হবে */
     .hero-left { flex-direction: column; text-align: center; }
-    .profile-pic { margin-right:0; margin-bottom:1.5rem; width: 160px; height: 160px; }
+    .profile-pic { margin-right:0; margin-bottom:1.5rem; width: 200px; height: 200px; }
     .intro { text-align: center; }
     .social-links { justify-content: center; }
     
-    /* Right Side Mobile Adjustments */
     .hero-right { 
       padding-left: 0; 
       border-left: none; 
-      border-top: 2px solid var(--border-color); /* Divider moves to top */
+      border-top: 2px solid var(--border-color); /* মাঝের দাগটি উপরে চলে যাবে */
       padding-top: 2rem; 
       text-align: center;
     }
     
-    .top-right-menu{display:none;} 
+    .top-right-menu{display:none;} /* মোবাইলে টপ মেনু হাইড হবে, হ্যামবার্গার দেখাবে */
     .theme-toggle { margin-right: 0; } 
     .project-card { height:200px; } 
   }
@@ -267,15 +297,22 @@
 </head>
 <body>
 
-<!-- Nav Bar -->
+<!-- =========================================
+     ওয়েবসাইটের মূল কাঠামো (HTML Structure) শুরু
+========================================= -->
+
+<!-- উপরের নেভিগেশন বার -->
 <div class="top-left-bar">
   <div style="display:flex;align-items:center;">
+    <!-- হ্যামবার্গার আইকন যা সাইড মেনু ওপেন করে -->
     <div class="hamburger" onclick="toggleMenu()">☰</div>
     <h1 class="logo">Assalamu Alaikum</h1>
   </div>
   
   <div style="display:flex; align-items:center;">
+    <!-- ডার্ক/লাইট মোড চেঞ্জ করার বাটন -->
     <button class="theme-toggle" id="themeToggleBtn" aria-label="Toggle Dark Mode" onclick="toggleTheme()">🌙</button>
+    <!-- ডেক্সটপ মেনু লিংকগুলো -->
     <div class="top-right-menu">
       <a href="#about">About</a>
       <a href="#skills">Skills</a>
@@ -286,7 +323,7 @@
   </div>
 </div>
 
-<!-- Sidebar Menu -->
+<!-- মোবাইলের জন্য সাইড মেনু (লুকানো থাকে, ক্লিক করলে বের হয়) -->
 <div id="sideMenu" class="side-menu">
   <a href="#about" onclick="closeMenu()">About</a>
   <a href="#skills" onclick="closeMenu()">Skills</a>
@@ -296,10 +333,10 @@
   <a href="access.html">Windows activation code</a>
 </div>
 
-<!-- Hero & About Section (Left/Right Layout) -->
+<!-- হিরো বা ইন্ট্রোডাকশন সেকশন -->
 <div class="hero" id="about">
   
-  <!-- Left Side: Image & Intro -->
+  <!-- বাম পাশ: ছবি এবং সোশ্যাল লিংক -->
   <div class="hero-left">
     <img src="image/shabinp1.png" alt="Your photo" class="profile-pic" />
     <div class="intro">
@@ -312,7 +349,7 @@
     </div>
   </div>
 
-  <!-- Right Side: About Me Text -->
+  <!-- ডান পাশ: নিজের সম্পর্কে তথ্য -->
   <div class="hero-right">
     <h3>About Me</h3>
     <p>Hello! I’m Shabin Shariar, a Textile Engineer from Bangladesh. I’m passionate about smart textiles, modern technology, and sharing educational content through my YouTube channel, <strong>Think Outside the Box</strong>.</p>
@@ -320,7 +357,7 @@
 
 </div>
 
-<!-- Skills Section -->
+<!-- স্কিলস বা দক্ষতার সেকশন -->
 <section id="skills">
   <h3>What I Do</h3>
   <div class="skills-grid">
@@ -337,7 +374,7 @@
   </div>
 </section>
 
-<!-- Projects Section -->
+<!-- প্রজেক্টস সেকশন (বন্ধুদের জন্য ড্রাইভ/শিট লিংক) -->
 <section id="projects">
   <h3>This Section For My University Friends</h3>
   <div class="project-grid">
@@ -363,49 +400,58 @@
     </a>
   </div>
 </section>
-
- <section id="contact">
- </section>
  
-<!-- Contact Section -->
+<!-- কন্টাক্ট সেকশন (ইমেইল করার বাটন) -->
 <section id="contact">
   <h3>Contact Me</h3>
   <p>Let’s collaborate! Feel free to reach out for projects or just to say hi.</p>
   <a href="mailto:251-23-006@diu.edu.bd" class="btn">Say Hello</a>
 </section>
 
+<!-- ওয়েবসাইটের ফুটার বা একদম নিচের অংশ -->
 <footer>
   <p>© 2025 Shabin Shariar. All Rights Reserved.</p>
 </footer>
 
+<!-- =========================================
+     জাভাস্ক্রিপ্ট (ওয়েবসাইটের ফাংশনালিটি)
+========================================= -->
 <script>
+  // সাইড মেনু খোলার ফাংশন
   function toggleMenu() {
     const menu = document.getElementById("sideMenu");
     if(menu.style.width==="250px") menu.style.width="0";
     else menu.style.width="250px";
   }
+  
+  // সাইড মেনু বন্ধ করার ফাংশন
   function closeMenu() { document.getElementById("sideMenu").style.width="0"; }
 
+  // ডার্ক এবং লাইট থিমের জন্য লজিক
   const themeBtn = document.getElementById('themeToggleBtn');
   const body = document.body;
+  // আগে থেকে কোনো থিম সেভ করা আছে কিনা তা চেক করা হচ্ছে
   const currentTheme = localStorage.getItem('portfolioTheme');
   
+  // যদি ডার্ক থিম সেভ করা থাকে, তবে ওয়েবসাইট রিলোড হলেও ডার্ক থাকবে
   if (currentTheme === 'dark') {
     body.classList.add('dark-theme');
     themeBtn.innerText = '☀️';
   }
 
+  // থিম চেঞ্জ করার ফাংশন (বাটনে ক্লিক করলে কাজ করবে)
   function toggleTheme() {
     body.classList.toggle('dark-theme');
     if (body.classList.contains('dark-theme')) {
       themeBtn.innerText = '☀️';
-      localStorage.setItem('portfolioTheme', 'dark');
+      localStorage.setItem('portfolioTheme', 'dark'); // ব্রাউজারে ডার্ক মোড সেভ করা
     } else {
       themeBtn.innerText = '🌙';
-      localStorage.setItem('portfolioTheme', 'light');
+      localStorage.setItem('portfolioTheme', 'light'); // ব্রাউজারে লাইট মোড সেভ করা
     }
   }
 
+  // মেনুর লিংকে ক্লিক করলে স্মুথলি স্ক্রল করে সেই সেকশনে যাওয়ার কোড
   document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
     anchor.addEventListener("click", function(e){
       e.preventDefault();
@@ -413,6 +459,7 @@
     });
   });
 
+  // মেনুর বাইরে স্ক্রিনের অন্য কোথাও ক্লিক করলে মেনু নিজে নিজেই বন্ধ হয়ে যাবে
   document.addEventListener("click", function(event){
     const menu = document.getElementById("sideMenu");
     const hamburger = document.querySelector(".hamburger");
