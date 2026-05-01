@@ -10,6 +10,7 @@ body {
   background:black;
   color:#00ff99;
   font-family:"Courier New", monospace;
+  overflow: hidden; /* স্ক্রলবার লুকানোর জন্য */
 }
 
 #terminal {
@@ -42,20 +43,47 @@ input {
   font-size:0.9rem;
 }
 
+/* শুরুর ক্লিকের স্ক্রিন স্টাইল */
+#startScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+#startScreen h2 {
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 </style>
 </head>
 
 <body>
 
+<!-- শুরুতে ক্লিক করার জন্য স্ক্রিন -->
+<div id="startScreen" class="glow">
+  <h2>[ CLICK ANYWHERE TO INITIALIZE SYSTEM ]</h2>
+</div>
+
 <div id="terminal" class="glow"></div>
 
-<!-- আপনার লোকাল অডিও ফাইলগুলো এখানে অ্যাড করা হলো -->
+<!-- আপনার লোকাল অডিও ফাইলগুলো -->
 <audio id="hackSound" src="typing.mp3"></audio>
 <audio id="keyPressSound" src="typing.mp3"></audio>
 <audio id="successSound" src="success.mp3"></audio>
 <audio id="errorSound" src="error.mp3"></audio>
-<!-- নতুন স্টার্টআপ সাউন্ড অ্যাড করা হলো -->
-<audio id="startupSound" src="audios/async function start audio.mp3"></audio>
+<audio id="startupSound" src="async function start audio.mp3"></audio>
 
 <script>
 const terminal = document.getElementById("terminal");
@@ -63,8 +91,9 @@ const sound = document.getElementById("hackSound");
 const keySound = document.getElementById("keyPressSound");
 const successSound = document.getElementById("successSound");
 const errorSound = document.getElementById("errorSound");
-// নতুন স্টার্টআপ সাউন্ডটি জাভাস্ক্রিপ্টে নেওয়া হলো
 const startupSound = document.getElementById("startupSound");
+
+const startScreen = document.getElementById("startScreen");
 
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
@@ -79,7 +108,7 @@ async function typeText(text) {
 }
 
 async function start() {
-  // লেখা শুরু হওয়ার সাথে সাথে এই সাউন্ডটি বাজবে
+  // লেখা শুরু হওয়ার সাথে সাথে এই সাউন্ডটি বাজবে
   startupSound.currentTime = 0;
   startupSound.play().catch(()=>{});
 
@@ -102,7 +131,6 @@ async function start() {
 function inputField(type) {
   const input = document.createElement("input");
   
-  // পাসওয়ার্ড লেখার সময় যেন * দেখায়
   if(type === "password") {
       input.type = "password"; 
   }
@@ -111,7 +139,6 @@ function inputField(type) {
   input.focus();
 
   input.addEventListener("keydown", function(e){
-    // কীবোর্ডে কিছু টাইপ করলেই typing.mp3 বাজবে
     if(e.key !== "Enter"){
         keySound.currentTime = 0;
         keySound.play().catch(()=>{});
@@ -139,7 +166,6 @@ function askPassword(){
 
 async function checkPassword(pass){
   if(pass==="shabin"){
-    // পাসওয়ার্ড সঠিক হলে success.mp3 বাজবে
     successSound.currentTime = 0;
     successSound.play().catch(()=>{});
     
@@ -151,7 +177,6 @@ async function checkPassword(pass){
     },1500);
 
   } else {
-    // পাসওয়ার্ড ভুল হলে error.mp3 বাজবে
     errorSound.currentTime = 0;
     errorSound.play().catch(()=>{});
 
@@ -160,51 +185,12 @@ async function checkPassword(pass){
   }
 }
 
-function showCodes(){
-  const codes = [
-    "XXXXX-XXXXX-XXXXX-XXXXX",
-    "XXXXX-XXXXX-XXXXX-XXXXX",
-    "XXXXX-XXXXX-XXXXX-XXXXX"
-  ];
+// যখন ইউজার স্ক্রিনে ক্লিক করবে, তখন startScreen হাইড হবে এবং start() ফাংশন রান করবে
+startScreen.addEventListener("click", () => {
+  startScreen.style.display = "none";
+  start();
+});
 
-  codes.forEach(code=>{
-    const div = document.createElement("div");
-    div.className="code";
-    div.textContent = code;
-
-    div.onclick = ()=>{
-      navigator.clipboard.writeText(code);
-      const msg = document.createElement("div");
-      msg.className="copy-msg";
-      msg.textContent="Copied!";
-      terminal.appendChild(msg);
-      setTimeout(()=>msg.remove(),1000);
-    };
-
-    terminal.appendChild(div);
-  });
-}
-
-async function fakeAI(cmd){
-  await typeText("Processing command: " + cmd);
-
-  if(cmd.toLowerCase().includes("help")){
-    await typeText("Available commands: help, status, clear");
-  }
-  else if(cmd.toLowerCase().includes("status")){
-    await typeText("System running нормально ⚡");
-  }
-  else if(cmd.toLowerCase().includes("clear")){
-    terminal.innerHTML="";
-  }
-  else{
-    await typeText("Unknown command...");
-  }
-
-  inputField("command");
-}
-
-start();
 </script>
 
 </body>
