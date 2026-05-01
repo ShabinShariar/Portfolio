@@ -49,11 +49,22 @@ input {
 
 <div id="terminal" class="glow"></div>
 
-<audio id="hackSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<!-- আপনার লোকাল অডিও ফাইলগুলো এখানে অ্যাড করা হলো -->
+<audio id="hackSound" src="typing.mp3"></audio>
+<audio id="keyPressSound" src="typing.mp3"></audio>
+<audio id="successSound" src="success.mp3"></audio>
+<audio id="errorSound" src="error.mp3"></audio>
+<!-- নতুন স্টার্টআপ সাউন্ড অ্যাড করা হলো -->
+<audio id="startupSound" src="async function start audio.mp3"></audio>
 
 <script>
 const terminal = document.getElementById("terminal");
 const sound = document.getElementById("hackSound");
+const keySound = document.getElementById("keyPressSound");
+const successSound = document.getElementById("successSound");
+const errorSound = document.getElementById("errorSound");
+// নতুন স্টার্টআপ সাউন্ডটি জাভাস্ক্রিপ্টে নেওয়া হলো
+const startupSound = document.getElementById("startupSound");
 
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
@@ -68,9 +79,20 @@ async function typeText(text) {
 }
 
 async function start() {
+  // লেখা শুরু হওয়ার সাথে সাথে এই সাউন্ডটি বাজবে
+  startupSound.currentTime = 0;
+  startupSound.play().catch(()=>{});
+
   await typeText("Initializing system...");
   await typeText("Connecting to secure server...");
   await typeText("Bypassing firewall...");
+  await typeText("Establishing secure SSH connection...");
+  await typeText("Routing IP: Tokyo -> Berlin -> Ashulia...");
+  await typeText("Loading 'Think_Outside_The_Box' framework...");
+  await typeText("Decrypting RSA-2048 keys...");
+  await typeText("Connecting to secure server...");
+  await typeText("Bypassing firewall...");
+  await typeText("Overriding mainframe protocol...");
   await typeText("ACCESS GRANTED ✅\n");
 
   await typeText("Enter Username:");
@@ -79,12 +101,24 @@ async function start() {
 
 function inputField(type) {
   const input = document.createElement("input");
+  
+  // পাসওয়ার্ড লেখার সময় যেন * দেখায়
+  if(type === "password") {
+      input.type = "password"; 
+  }
+  
   terminal.appendChild(input);
   input.focus();
 
   input.addEventListener("keydown", function(e){
+    // কীবোর্ডে কিছু টাইপ করলেই typing.mp3 বাজবে
+    if(e.key !== "Enter"){
+        keySound.currentTime = 0;
+        keySound.play().catch(()=>{});
+    }
+
     if(e.key==="Enter"){
-      terminal.innerHTML += input.value + "\n";
+      terminal.innerHTML += (type === "password" ? "*".repeat(input.value.length) : input.value) + "\n";
       input.remove();
 
       if(type==="username"){
@@ -105,19 +139,27 @@ function askPassword(){
 
 async function checkPassword(pass){
   if(pass==="shabin"){
+    // পাসওয়ার্ড সঠিক হলে success.mp3 বাজবে
+    successSound.currentTime = 0;
+    successSound.play().catch(()=>{});
+    
     await typeText("Authenticating...");
     await typeText("Login Successful 🔓");
 
-    // 🔥 1.5 sec delay দিয়ে নতুন page open
     setTimeout(()=>{
       window.location.href = "windows.html"; 
     },1500);
 
   } else {
+    // পাসওয়ার্ড ভুল হলে error.mp3 বাজবে
+    errorSound.currentTime = 0;
+    errorSound.play().catch(()=>{});
+
     await typeText("❌ Access Denied");
     askPassword();
   }
 }
+
 function showCodes(){
   const codes = [
     "XXXXX-XXXXX-XXXXX-XXXXX",
