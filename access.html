@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Secure Terminal</title>
+
+<style>
+body {
+  margin:0;
+  background:black;
+  color:#00ff99;
+  font-family:"Courier New", monospace;
+}
+
+#terminal {
+  padding:20px;
+  white-space:pre-wrap;
+}
+
+input {
+  background:transparent;
+  border:none;
+  color:#00ff99;
+  outline:none;
+  font-family:inherit;
+}
+
+.glow {
+  text-shadow:0 0 5px #00ff99,0 0 10px #00ff99,0 0 20px #00ff99;
+}
+
+.code {
+  cursor:pointer;
+}
+
+.code:hover {
+  color:#fff;
+}
+
+.copy-msg {
+  color:yellow;
+  font-size:0.9rem;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="terminal" class="glow"></div>
+
+<audio id="hackSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
+<script>
+const terminal = document.getElementById("terminal");
+const sound = document.getElementById("hackSound");
+
+const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+
+async function typeText(text) {
+  for (let char of text) {
+    terminal.innerHTML += char;
+    sound.currentTime = 0;
+    sound.play().catch(()=>{});
+    await sleep(20);
+  }
+  terminal.innerHTML += "\n";
+}
+
+async function start() {
+  await typeText("Initializing system...");
+  await typeText("Connecting to secure server...");
+  await typeText("Bypassing firewall...");
+  await typeText("ACCESS GRANTED ✅\n");
+
+  await typeText("Enter Username:");
+  inputField("username");
+}
+
+function inputField(type) {
+  const input = document.createElement("input");
+  terminal.appendChild(input);
+  input.focus();
+
+  input.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){
+      terminal.innerHTML += input.value + "\n";
+      input.remove();
+
+      if(type==="username"){
+        askPassword();
+      } else if(type==="password"){
+        checkPassword(input.value);
+      } else if(type==="command"){
+        fakeAI(input.value);
+      }
+    }
+  });
+}
+
+function askPassword(){
+  terminal.innerHTML += "Enter Password:\n";
+  inputField("password");
+}
+
+async function checkPassword(pass){
+  if(pass==="12345"){
+    await typeText("Authenticating...");
+    await typeText("Login Successful 🔓");
+
+    // 🔥 1.5 sec delay দিয়ে নতুন page open
+    setTimeout(()=>{
+      window.location.href = "windows.html"; 
+    },1500);
+
+  } else {
+    await typeText("❌ Access Denied");
+    askPassword();
+  }
+}
+function showCodes(){
+  const codes = [
+    "XXXXX-XXXXX-XXXXX-XXXXX",
+    "XXXXX-XXXXX-XXXXX-XXXXX",
+    "XXXXX-XXXXX-XXXXX-XXXXX"
+  ];
+
+  codes.forEach(code=>{
+    const div = document.createElement("div");
+    div.className="code";
+    div.textContent = code;
+
+    div.onclick = ()=>{
+      navigator.clipboard.writeText(code);
+      const msg = document.createElement("div");
+      msg.className="copy-msg";
+      msg.textContent="Copied!";
+      terminal.appendChild(msg);
+      setTimeout(()=>msg.remove(),1000);
+    };
+
+    terminal.appendChild(div);
+  });
+}
+
+async function fakeAI(cmd){
+  await typeText("Processing command: " + cmd);
+
+  if(cmd.toLowerCase().includes("help")){
+    await typeText("Available commands: help, status, clear");
+  }
+  else if(cmd.toLowerCase().includes("status")){
+    await typeText("System running нормально ⚡");
+  }
+  else if(cmd.toLowerCase().includes("clear")){
+    terminal.innerHTML="";
+  }
+  else{
+    await typeText("Unknown command...");
+  }
+
+  inputField("command");
+}
+
+start();
+</script>
+
+</body>
+</html>
