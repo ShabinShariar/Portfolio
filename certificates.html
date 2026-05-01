@@ -13,54 +13,86 @@
       font-family: "Poppins", sans-serif;
     }
 
+    /* =========================================
+       CSS Variables for Light & Dark Mode
+    ========================================= */
+    :root {
+      --bg-color: #f8fafc;
+      --text-color: #475569;
+      --heading-color: #0f172a;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --shadow-light: rgba(0,0,0,0.03);
+      --shadow-strong: rgba(0,0,0,0.08);
+    }
+
+    body.dark-theme {
+      --bg-color: #0f172a;
+      --text-color: #cbd5e1;
+      --heading-color: #f8fafc;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --primary-color: #38bdf8;
+      --primary-hover: #f8fafc;
+      --shadow-light: rgba(0,0,0,0.5);
+      --shadow-strong: rgba(56, 189, 248, 0.15);
+    }
+
     body {
-      background: #fff8ef;
+      background: var(--bg-color);
+      color: var(--text-color);
       padding: 2rem 5%;
+      transition: background 0.4s ease, color 0.4s ease;
     }
 
     h1 {
       text-align: center;
-      color: #e67e22;
+      color: var(--heading-color);
       margin-bottom: 2rem;
+      transition: color 0.4s ease;
     }
 
-   .cert-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* auto-fit এর পরিবর্তে fixed 3 columns */
-  gap: 2rem;
-}
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .cert-grid {
-    grid-template-columns: repeat(2, 1fr); /* medium screens - 2 per row */
-  }
-}
+    /* Responsive */
+    @media (max-width: 900px) {
+      .cert-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
 
-@media (max-width: 600px) {
-  .cert-grid {
-    grid-template-columns: 1fr; /* small screens - 1 per row */
-  }
-}
-
+    @media (max-width: 600px) {
+      .cert-grid {
+        grid-template-columns: 1fr;
+      }
+    }
 
     .cert-card {
-      background: #ffffff;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: 0.3s;
+      box-shadow: 0 4px 10px var(--shadow-light);
+      transition: all 0.3s ease;
     }
 
     .cert-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      border-color: var(--primary-color);
+      box-shadow: 0 15px 30px var(--shadow-strong);
     }
 
     .cert-card img {
       width: 100%;
       border-radius: 10px;
       margin-bottom: 1rem;
+      cursor: pointer;
     }
 
     .cert-info {
@@ -68,73 +100,85 @@
     }
 
     .cert-info h3 {
-      color: #e67e22;
+      color: var(--primary-color);
       margin-bottom: 0.5rem;
+      transition: color 0.4s ease;
     }
 
     .cert-info p {
       margin-bottom: 0.3rem;
-      color: #444;
+      color: var(--text-color);
       font-size: 0.95rem;
+      transition: color 0.4s ease;
     }
 
     .back-btn {
       display: inline-block;
-      margin-top: 2rem;
-      background: #e67e22;
-      color: #fff;
+      margin-top: 3rem;
+      background: var(--primary-color);
+      color: #ffffff;
       padding: 0.8rem 1.5rem;
       border-radius: 8px;
       text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px var(--shadow-strong); 
     }
+
+    /* Dark mode button fixes */
+    body.dark-theme .back-btn { color: #0f172a; }
+    body.dark-theme .back-btn:hover { background: #ffffff; color: #0f172a; }
 
     .back-btn:hover {
-      background: #cf711f;
+      background: var(--primary-hover);
+      transform: translateY(-3px); 
+      box-shadow: 0 8px 20px var(--shadow-strong); 
     }
+
     /* Popup Background */
-.popup {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  padding-top: 60px;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background: rgba(0,0,0,0.8);
-}
+    .popup {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      padding-top: 60px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.85); /* Slightly darker for better cinematic feel */
+    }
 
-/* Popup Image */
-.popup-content {
-  margin: auto;
-  display: block;
-  width: 80%;
-  max-width: 900px;
-  border-radius: 10px;
-}
+    /* Popup Image */
+    .popup-content {
+      margin: auto;
+      display: block;
+      width: 80%;
+      max-width: 900px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+      cursor: zoom-in;
+    }
 
-/* Close Button */
-.close {
-  position: absolute;
-  top: 20px;
-  right: 40px;
-  color: white;
-  font-size: 40px;
-  font-weight: bold;
-  cursor: pointer;
-}
-    /* Hover Zoom Effect for Popup Image */
-.popup-content {
-  transition: transform 0.3s ease;
-  cursor: zoom-in;
-}
+    .popup-content:hover {
+      transform: scale(1.1); /* Reduced zoom slightly to prevent it going out of screen */
+      cursor: zoom-out;
+    }
 
-.popup-content:hover {
-  transform: scale(1.5); /* Zoom level */
-  cursor: zoom-out;
-}
-
+    /* Close Button */
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 40px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+    .close:hover {
+      color: var(--primary-color);
+    }
   </style>
 </head>
 <body>
@@ -147,8 +191,7 @@
     <div class="cert-card">
       <img src="image2/certificates1.jpg" onclick="openPopup(this.src)" alt="Certificate 1">
       <div class="cert-info">
-        <h3>Career Essentials in Data Analysis by
- Microsoft and LinkedIn</h3>
+        <h3>Career Essentials in Data Analysis by Microsoft and LinkedIn</h3>
         <p><strong>Platform:</strong> linkedin learning</p>
         <p><strong>Date Earned:</strong> Sep 09, 2024</p>
         <p><strong>Details:</strong> If I succeed in this, I will consider it a true accomplishment. Through this process, I have learned many valuable things—how to analyze data effectively, how to organize information efficiently within a short period of time, and how to arrive at strong, well-reasoned conclusions. I have also gained many other important insights along the way.</p>
@@ -175,64 +218,84 @@
       </div>
     </div>
 
-     <!-- Row 2 -->
-  <div class="cert-card">
-    <img src="image2/certificates6.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
-    <div class="cert-info">
-      <h3>Excel for Beginners</h3>
-      <p><strong>Platform:</strong> Great Learning</p>
-      <p><strong>Date Earned:</strong> September 2024</p>
-      <p><strong>Details:</strong> Through this request, I was able to learn various essential aspects of Microsoft Excel. Even though it may not be extremely important or something that will drastically change things for me, it has certainly expanded my knowledge to some extent.</p>
+    <!-- Row 2 -->
+    <div class="cert-card">
+      <img src="image2/certificates6.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
+      <div class="cert-info">
+        <h3>Excel for Beginners</h3>
+        <p><strong>Platform:</strong> Great Learning</p>
+        <p><strong>Date Earned:</strong> September 2024</p>
+        <p><strong>Details:</strong> Through this request, I was able to learn various essential aspects of Microsoft Excel. Even though it may not be extremely important or something that will drastically change things for me, it has certainly expanded my knowledge to some extent.</p>
+      </div>
     </div>
-  </div>
     
-<div class="cert-card">
-    <img src="image2/certificates7.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
-    <div class="cert-info">
-      <h3>Leadership and Management</h3>
-      <p><strong>Platform:</strong> Great Learning</p>
-      <p><strong>Date Earned:</strong> September 2024</p>
+    <div class="cert-card">
+      <img src="image2/certificates7.jpg" onclick="openPopup(this.src)" alt="Certificate 5">
+      <div class="cert-info">
+        <h3>Leadership and Management</h3>
+        <p><strong>Platform:</strong> Great Learning</p>
+        <p><strong>Date Earned:</strong> September 2024</p>
+      </div>
     </div>
-  </div>
     
-<div class="cert-card">
-    <img src="image2/certificates4.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
-    <div class="cert-info">
-      <h3>Positivity - How to Build Positive Mentality</h3>
-      <p><strong>Platform:</strong> GoEdu</p>
-      <p><strong>Date Earned:</strong> May 08, 2025</p>
+    <div class="cert-card">
+      <img src="image2/certificates4.jpg" onclick="openPopup(this.src)" alt="Certificate 6">
+      <div class="cert-info">
+        <h3>Positivity - How to Build Positive Mentality</h3>
+        <p><strong>Platform:</strong> GoEdu</p>
+        <p><strong>Date Earned:</strong> May 08, 2025</p>
+      </div>
     </div>
-  </div>
 
     <!-- Row 3 -->
- <div class="cert-card">
-    <img src="image2/certificates5.jpg" onclick="openPopup(this.src)" alt="Certificate 4">
-    <div class="cert-info">
-      <h3>Time Management</h3>
-      <p><strong>Platform:</strong> Great Learning</p>
-      <p><strong>Date Earned:</strong> September 2024</p>
+    <div class="cert-card">
+      <img src="image2/certificates5.jpg" onclick="openPopup(this.src)" alt="Certificate 7">
+      <div class="cert-info">
+        <h3>Time Management</h3>
+        <p><strong>Platform:</strong> Great Learning</p>
+        <p><strong>Date Earned:</strong> September 2024</p>
+      </div>
     </div>
   </div>
- </div>
 
   <center>
     <a href="index.html" class="back-btn">← Back to Portfolio</a>
   </center>
-<!-- Image Popup Modal -->
-<div id="popupModal" class="popup">
-  <span class="close" onclick="closePopup()">&times;</span>
-  <img class="popup-content" id="popupImage">
-</div>
+
+  <!-- Image Popup Modal -->
+  <div id="popupModal" class="popup">
+    <span class="close" onclick="closePopup()">&times;</span>
+    <img class="popup-content" id="popupImage">
+  </div>
   
 <script>
-function openPopup(src) {
-  document.getElementById("popupModal").style.display = "block";
-  document.getElementById("popupImage").src = src;
-}
+  // ==========================================
+  // 1. Theme Synchronization Logic
+  // ==========================================
+  const currentTheme = localStorage.getItem('portfolioTheme');
+  if (currentTheme === 'dark') {
+    document.body.classList.add('dark-theme');
+  }
 
-function closePopup() {
-  document.getElementById("popupModal").style.display = "none";
-}
+  // ==========================================
+  // 2. Popup Modal Logic
+  // ==========================================
+  function openPopup(src) {
+    document.getElementById("popupModal").style.display = "block";
+    document.getElementById("popupImage").src = src;
+  }
+
+  function closePopup() {
+    document.getElementById("popupModal").style.display = "none";
+  }
+
+  // Close popup if clicked outside the image
+  window.onclick = function(event) {
+    let modal = document.getElementById("popupModal");
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
 </script>
 
 </body>
