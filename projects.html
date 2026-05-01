@@ -13,15 +13,44 @@
       font-family: "Poppins", sans-serif;
     }
 
+    /* =========================================
+       CSS Variables for Light & Dark Mode
+    ========================================= */
+    :root {
+      --bg-color: #f8fafc;
+      --text-color: #475569;
+      --heading-color: #0f172a;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --shadow-light: rgba(0,0,0,0.03);
+      --shadow-strong: rgba(0,0,0,0.08);
+    }
+
+    body.dark-theme {
+      --bg-color: #0f172a;
+      --text-color: #cbd5e1;
+      --heading-color: #f8fafc;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --primary-color: #38bdf8;
+      --primary-hover: #f8fafc;
+      --shadow-light: rgba(0,0,0,0.5);
+      --shadow-strong: rgba(56, 189, 248, 0.15);
+    }
+
     body {
-      background: #fff8ef;
+      background: var(--bg-color);
       padding: 2rem 5%;
+      transition: background 0.4s ease, color 0.4s ease;
     }
 
     h1 {
       text-align: center;
-      color: #e67e22;
+      color: var(--heading-color);
       margin-bottom: 2rem;
+      transition: color 0.4s ease;
     }
 
     .project-grid {
@@ -43,19 +72,22 @@
     }
 
     .project-card {
-      background: #ffffff;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 1.2rem; /* even smaller padding */
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: 0.3s;
+      box-shadow: 0 4px 10px var(--shadow-light);
+      transition: all 0.3s ease;
       cursor: pointer;
       max-width: 360px; /* smaller width */
       margin: auto;
+      width: 100%; /* Ensures it fills the grid cell up to max-width */
     }
 
     .project-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      border-color: var(--primary-color);
+      box-shadow: 0 15px 30px var(--shadow-strong);
     }
 
     .project-card img {
@@ -63,20 +95,34 @@
       border-radius: 8px;
       height: 250px; /* smaller height */
       object-fit: contain;
+      transition: transform 0.4s ease;
+    }
+    
+    .project-card:hover img {
+      transform: scale(1.03); /* Subtle zoom effect */
     }
 
     .back-btn {
       display: inline-block;
-      margin-top: 2rem;
-      background: #e67e22;
-      color: #fff;
+      margin-top: 3rem;
+      background: var(--primary-color);
+      color: #ffffff;
       padding: 0.8rem 1.5rem;
       border-radius: 8px;
       text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px var(--shadow-strong); 
     }
 
+    /* Dark mode button fixes */
+    body.dark-theme .back-btn { color: #0f172a; }
+    body.dark-theme .back-btn:hover { background: #ffffff; color: #0f172a; }
+
     .back-btn:hover {
-      background: #cf711f;
+      background: var(--primary-hover);
+      transform: translateY(-3px); 
+      box-shadow: 0 8px 20px var(--shadow-strong); 
     }
   </style>
 </head>
@@ -87,7 +133,7 @@
 <div class="project-grid">
 
   <!-- Project Card Example -->
-    <div class="project-card" onclick="window.location.href='projillustrator.html'">
+  <div class="project-card" onclick="window.location.href='projillustrator.html'">
     <img src="image/illustretorlogo.png" alt="Project 3">
   </div>
   
@@ -99,12 +145,22 @@
     <img src="image/excellogo.png" alt="Project 2">
   </div>
 
-
 </div>
 
 <center>
   <a href="index.html" class="back-btn">← Back to Portfolio</a>
 </center>
+
+<script>
+  // ==========================================
+  // Theme Synchronization Logic
+  // ==========================================
+  // This script checks if the user activated Dark Mode on the main page.
+  const currentTheme = localStorage.getItem('portfolioTheme');
+  if (currentTheme === 'dark') {
+    document.body.classList.add('dark-theme');
+  }
+</script>
 
 </body>
 </html>
