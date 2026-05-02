@@ -18,15 +18,15 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins", sans-serif; }
 
   /* =========================================
-     লাইট এবং ডার্ক থিমের জন্য কালার ভেরিয়েবল (যাতে সহজে কালার পরিবর্তন করা যায়)
+     লাইট এবং ডার্ক থিমের জন্য কালার ভেরিয়েবল (Glassmorphism এর জন্য কালার স্বচ্ছ করা হয়েছে)
   ========================================= */
   :root {
     --bg-color: #f8fafc;
     --text-color: #475569;
     --heading-color: #0f172a;
-    --card-bg: #ffffff;
-    --nav-bg: rgba(255, 255, 255, 0.9);
-    --border-color: #e2e8f0;
+    --card-bg: rgba(255, 255, 255, 0.7); /* স্বচ্ছ (Transparent) করা হলো */
+    --nav-bg: rgba(255, 255, 255, 0.8);
+    --border-color: rgba(226, 232, 240, 0.6); /* স্বচ্ছ (Transparent) করা হলো */
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
     --shadow-light: rgba(0,0,0,0.03);
@@ -38,9 +38,9 @@
     --bg-color: #0f172a;
     --text-color: #cbd5e1;
     --heading-color: #f8fafc;
-    --card-bg: #1e293b;
+    --card-bg: rgba(30, 41, 59, 0.7); /* স্বচ্ছ (Transparent) করা হলো */
     --nav-bg: rgba(15, 23, 42, 0.85);
-    --border-color: #334155;
+    --border-color: rgba(51, 65, 85, 0.6); /* স্বচ্ছ (Transparent) করা হলো */
     --primary-color: #38bdf8;
     --primary-hover: #f8fafc;
     --shadow-light: rgba(0,0,0,0.5);
@@ -73,7 +73,8 @@
     justify-content: space-between;
     padding: 15px 5%;
     background: var(--nav-bg); 
-    backdrop-filter: blur(10px); /* পেছনের অংশ একটু ঘোলা দেখাবে */
+    backdrop-filter: blur(15px); /* পেছনের অংশ ব্লার দেখাবে */
+    -webkit-backdrop-filter: blur(15px);
     box-shadow: 0 2px 15px var(--shadow-light);
     position: sticky; 
     top: 0;
@@ -156,6 +157,14 @@
   .side-menu a:hover { color: var(--primary-color); padding-left: 40px; }
 
   /* =========================================
+     Glassmorphism Blur Effect (সব কার্ড ও সেকশনের জন্য)
+  ========================================= */
+  .hero, .skill, .project-card, .yt-video, footer, .side-menu {
+    backdrop-filter: blur(12px); /* পেছনের ব্লবগুলো ব্লার হয়ে দেখা যাবে */
+    -webkit-backdrop-filter: blur(12px); /* Safari ব্রাউজারের সাপোর্ট */
+  }
+
+  /* =========================================
      হিরো সেকশন (প্রোফাইল পিকচার এবং এবাউট মি)
   ========================================= */
   .hero {
@@ -226,7 +235,7 @@
   /* =========================================
      কমন সেকশন স্টাইল (Skills, Projects, YouTube, Contact এর জন্য)
   ========================================= */
-  section { padding:4rem 5%; text-align:center; }
+  section { padding:4rem 5%; text-align:center; position: relative; z-index: 1;}
   section h3 { font-size: 2rem; color: var(--heading-color); margin-bottom: 1rem; transition: color 0.4s ease;}
   section p { color: var(--text-color); max-width: 700px; margin: 0 auto 2rem auto; }
 
@@ -285,7 +294,71 @@
   .btn:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 8px 20px var(--shadow-strong); }
 
   /* ফুটারের ডিজাইন */
-  footer { text-align:center; padding:2rem; background: var(--card-bg); border-top: 1px solid var(--border-color); color: var(--text-color); font-size:0.9rem; margin-top: 2rem; transition: background 0.4s ease, border-color 0.4s ease;}
+  footer { text-align:center; padding:2rem; background: var(--card-bg); border-top: 1px solid var(--border-color); color: var(--text-color); font-size:0.9rem; margin-top: 2rem; transition: background 0.4s ease, border-color 0.4s ease; position: relative; z-index: 1;}
+
+  /* =========================================
+     Animated Glowing Blobs CSS (নতুন যুক্ত করা হয়েছে)
+  ========================================= */
+  .animated-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1; /* সবার পেছনে থাকবে */
+    overflow: hidden;
+    pointer-events: none; /* এতে ক্লিক করা যাবে না, শুধু দেখাবে */
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px); /* রঙকে ছড়িয়ে দিয়ে গ্লোয়িং ইফেক্ট দেয় */
+    opacity: 0.6;
+    animation: float 15s infinite alternate ease-in-out;
+  }
+
+  /* প্রথম ভাসমান আভা (Top Left) */
+  .blob-1 {
+    width: 400px;
+    height: 400px;
+    background: rgba(37, 99, 235, 0.3); /* ব্লু কালার */
+    top: -100px;
+    left: -100px;
+    animation-duration: 20s;
+  }
+
+  /* দ্বিতীয় ভাসমান আভা (Bottom Right) */
+  .blob-2 {
+    width: 500px;
+    height: 500px;
+    background: rgba(56, 189, 248, 0.3); /* স্কাই ব্লু */
+    bottom: -150px;
+    right: -100px;
+    animation-duration: 25s;
+  }
+
+  /* তৃতীয় ভাসমান আভা (Middle) */
+  .blob-3 {
+    width: 350px;
+    height: 350px;
+    background: rgba(168, 85, 247, 0.3); /* হালকা পার্পল */
+    top: 40%;
+    left: 30%;
+    animation-duration: 18s;
+  }
+
+  /* ডার্ক মোডের জন্য গ্লোয়িং কালারগুলো আরও মানানসই করা */
+  body.dark-theme .blob-1 { background: rgba(56, 189, 248, 0.15); }
+  body.dark-theme .blob-2 { background: rgba(99, 102, 241, 0.15); }
+  body.dark-theme .blob-3 { background: rgba(139, 92, 246, 0.15); }
+
+  /* ভাসমান অ্যানিমেশনের কি-ফ্রেম */
+  @keyframes float {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, 90px) scale(1.1); }
+    100% { transform: translate(-60px, -50px) scale(0.9); }
+  }
 
   /* =========================================
      মোবাইল রেসপন্সিভ ফিক্স (ছোট স্ক্রিনের জন্য)
@@ -308,12 +381,21 @@
     .top-right-menu{display:none;} /* মোবাইলে টপ মেনু হাইড হবে, হ্যামবার্গার দেখাবে */
     .theme-toggle { margin-right: 0; } 
     .project-card { height:200px; } 
-    /* মোবাইলে ভিডিওগুলো এক লাইনে ৩টা না দেখিয়ে নিচে নিচে দেখাবে যাতে ছোট না হয়ে যায় */
+    /* মোবাইলে ভিডিওগুলো এক লাইনে ৩টা না দেখিয়ে নিচে নিচে দেখাবে যাতে ছোট না হয়ে যায় */
     .yt-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   }
 </style>
 </head>
 <body>
+
+<!-- =========================================
+     অ্যানিমেটেড গ্লোয়িং ব্যাকগ্রাউন্ড (Glassmorphism এর জন্য)
+========================================= -->
+<div class="animated-bg">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
 
 <!-- =========================================
      ওয়েবসাইটের মূল কাঠামো (HTML Structure) শুরু
@@ -399,7 +481,7 @@
   <h3>My YouTube Content</h3>
   <p>Educational content from my channel Think Outside the Box.</p>
   <div class="yt-grid">
-    <!-- এখানে VIDEO_ID এর জায়গায় আপনার ইউটিউব ভিডিওর আইডি বসাবেন -->
+    <!-- এখানে VIDEO_ID এর জায়গায় আপনার ইউটিউব ভিডিওর আইডি বসাবেন -->
     <div class="yt-video">
       <iframe src="https://www.youtube.com/embed/5y3GdYrNU1g" title="YouTube video player" allowfullscreen></iframe>
     </div>
@@ -420,7 +502,7 @@
     </div>
   </div>
   
-  <!-- ভিডিওর নিচে সরাসরি ইউটিউবে যাওয়ার বাটন -->
+  <!-- ভিডিওর নিচে সরাসরি ইউটিউবে যাওয়ার বাটন -->
   <div style="margin-top: 2.5rem;">
     <a href="https://www.youtube.com/@thinkouside/videos" target="_blank" rel="noopener" class="btn">Visit My YouTube Channel</a>
   </div>
@@ -462,7 +544,7 @@
 
 <!-- ওয়েবসাইটের ফুটার বা একদম নিচের অংশ -->
 <footer>
-  <p>© 2025 Shabin Shariar. All Rights Reserved.</p>
+  <p>© 2026 Shabin Shariar. All Rights Reserved.</p>
 </footer>
 
 <!-- =========================================
