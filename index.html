@@ -1,24 +1,24 @@
-<!-- এটি একটি HTML5 ডকুমেন্ট তা ব্রাউজারকে বুঝিয়ে দেয় -->
+<!-- এটি একটি HTML5 ডকুমেন্ট তা ব্রাউজারকে বুঝিয়ে দেয় -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- ওয়েবসাইটের মেটাডেটা, ক্যারেক্টার সেট এবং রেসপন্সিভ ভিউপোর্টের সেটিং -->
+<!-- ওয়েবসাইটের মেটাডেটা, ক্যারেক্টার সেট এবং রেসপন্সিভ ভিউপোর্টের সেটিং -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- ব্রাউজারের ট্যাবে ওয়েবসাইটের যে নাম দেখাবে -->
+<!-- ব্রাউজারের ট্যাবে ওয়েবসাইটের যে নাম দেখাবে -->
 <title>Shabin Shariar – Portfolio</title>
 
 <!-- ব্রাউজারের ট্যাবে টাইটেলের পাশে যে ইমোজি বা আইকন দেখাবে -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>😊</text></svg>">
 
-<!-- ওয়েবসাইটের ডিজাইন বা CSS শুরু -->
+<!-- ওয়েবসাইটের ডিজাইন বা CSS শুরু -->
 <style>
-  /* ওয়েবসাইটের সব ডিফল্ট মার্জিন ও প্যাডিং জিরো করা এবং ফন্ট স্টাইল সেট করা */
+  /* ওয়েবসাইটের সব ডিফল্ট মার্জিন ও প্যাডিং জিরো করা এবং ফন্ট স্টাইল সেট করা */
   * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins", sans-serif; }
 
   /* =========================================
-     লাইট এবং ডার্ক থিমের জন্য কালার ভেরিয়েবল (যাতে সহজে কালার পরিবর্তন করা যায়)
+     লাইট এবং ডার্ক থিমের জন্য কালার ভেরিয়েবল (যাতে সহজে কালার পরিবর্তন করা যায়)
   ========================================= */
   :root {
     --bg-color: #f8fafc;
@@ -46,6 +46,14 @@
     --shadow-light: rgba(0,0,0,0.5);
     --shadow-strong: rgba(56, 189, 248, 0.15);
   }
+
+  /* =========================================
+     কাস্টম স্ক্রলবার এর ডিজাইন
+  ========================================= */
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-color); }
+  ::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
 
   /* মূল বডির ডিজাইন ও ট্রানজিশন এনিমেশন */
   body { 
@@ -83,7 +91,7 @@
   }
   .hamburger:hover { transform: scale(1.1); }
   
-  /* ওয়েবসাইটের লোগো/নাম এর ডিজাইন */
+  /* ওয়েবসাইটের লোগো/নাম এর ডিজাইন */
   .logo {
     font-size: 1.5rem;
     font-weight: 700;
@@ -181,7 +189,7 @@
     flex-shrink: 0; 
   }
   .profile-pic:hover {
-    transform: scale(1.05); /* হোভার করলে ছবি হালকা বড় হবে */
+    transform: scale(1.05); /* হোভার করলে ছবি হালকা বড় হবে */
   }
   
   /* নামের অংশ এবং সোশ্যাল লিংকস */
@@ -216,14 +224,18 @@
   }
 
   /* =========================================
-     কমন সেকশন স্টাইল (Skills, Projects, Contact এর জন্য)
+     কমন সেকশন স্টাইল (Skills, Projects, YouTube, Contact এর জন্য)
   ========================================= */
   section { padding:4rem 5%; text-align:center; }
   section h3 { font-size: 2rem; color: var(--heading-color); margin-bottom: 1rem; transition: color 0.4s ease;}
   section p { color: var(--text-color); max-width: 700px; margin: 0 auto 2rem auto; }
 
-  /* স্কিল এবং প্রজেক্টের কার্ডগুলো গ্রিড আকারে সাজানোর জন্য */
-  .skills-grid, .project-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:2rem; margin-top:2rem; }
+  /* স্কিল, প্রজেক্ট এবং ইউটিউব কার্ডগুলো গ্রিড আকারে সাজানোর জন্য */
+  .skills-grid, .project-grid, .yt-grid { display:grid; gap:2rem; margin-top:2rem; }
+  .skills-grid { grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
+  
+  /* ইউটিউব ভিডিও এক লাইনে ৩টা করে দেখানোর জন্য কোড */
+  .yt-grid { grid-template-columns: repeat(3, 1fr); }
 
   /* প্রতিটি স্কিল বক্সের ডিজাইন */
   .skill {
@@ -255,6 +267,10 @@
   .project-card:hover::after { opacity: 1; }
   .project-card img { width:100%; height:100%; object-fit:cover; display:block; transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
   .project-card:hover img { transform: scale(1.05); }
+
+  /* ইউটিউব ভিডিও সেকশন এর ডিজাইন */
+  .yt-video { border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 6px var(--shadow-light); background: var(--card-bg); }
+  .yt-video iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
 
   /* =========================================
      বাটনের ডিজাইন (Contact me বাটন)
@@ -292,13 +308,15 @@
     .top-right-menu{display:none;} /* মোবাইলে টপ মেনু হাইড হবে, হ্যামবার্গার দেখাবে */
     .theme-toggle { margin-right: 0; } 
     .project-card { height:200px; } 
+    /* মোবাইলে ভিডিওগুলো এক লাইনে ৩টা না দেখিয়ে নিচে নিচে দেখাবে যাতে ছোট না হয়ে যায় */
+    .yt-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   }
 </style>
 </head>
 <body>
 
 <!-- =========================================
-     ওয়েবসাইটের মূল কাঠামো (HTML Structure) শুরু
+     ওয়েবসাইটের মূল কাঠামো (HTML Structure) শুরু
 ========================================= -->
 
 <!-- উপরের নেভিগেশন বার -->
@@ -316,17 +334,19 @@
     <div class="top-right-menu">
       <a href="#about">About</a>
       <a href="#skills">Skills</a>
-      <a href="projects.html">Projects</a>
+      <a href="#youtube">YouTube</a> <!-- সিরিয়াল পরিবর্তন করা হয়েছে -->
+      <a href="#projects">Projects</a> 
       <a href="certificates.html">Achievements</a>
       <a href="#contact">Contact</a>
     </div>
   </div>
 </div>
 
-<!-- মোবাইলের জন্য সাইড মেনু (লুকানো থাকে, ক্লিক করলে বের হয়) -->
+<!-- মোবাইলের জন্য সাইড মেনু (লুকানো থাকে, ক্লিক করলে বের হয়) -->
 <div id="sideMenu" class="side-menu">
   <a href="#about" onclick="closeMenu()">About</a>
   <a href="#skills" onclick="closeMenu()">Skills</a>
+  <a href="#youtube" onclick="closeMenu()">YouTube</a> <!-- সিরিয়াল পরিবর্তন করা হয়েছে -->
   <a href="#projects" onclick="closeMenu()">Projects</a>
   <a href="certificates.html" onclick="closeMenu()">Achievements</a>
   <a href="#contact" onclick="closeMenu()">Contact</a>
@@ -374,6 +394,38 @@
   </div>
 </section>
 
+<!-- ইউটিউব সেকশন (এখন প্রজেক্ট সেকশনের উপরে) -->
+<section id="youtube">
+  <h3>My YouTube Content</h3>
+  <p>Educational content from my channel Think Outside the Box.</p>
+  <div class="yt-grid">
+    <!-- এখানে VIDEO_ID এর জায়গায় আপনার ইউটিউব ভিডিওর আইডি বসাবেন -->
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/5y3GdYrNU1g" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/YDXkT0UWJA" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/YDXkT0UWJA" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/S-iG_SjEDDE" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/VIDEO_ID_5" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+    <div class="yt-video">
+      <iframe src="https://www.youtube.com/embed/VIDEO_ID_6" title="YouTube video player" allowfullscreen></iframe>
+    </div>
+  </div>
+  
+  <!-- ভিডিওর নিচে সরাসরি ইউটিউবে যাওয়ার বাটন -->
+  <div style="margin-top: 2.5rem;">
+    <a href="https://www.youtube.com/@thinkouside/videos" target="_blank" rel="noopener" class="btn">Visit My YouTube Channel</a>
+  </div>
+</section>
+
 <!-- প্রজেক্টস সেকশন (বন্ধুদের জন্য ড্রাইভ/শিট লিংক) -->
 <section id="projects">
   <h3>This Section For My University Friends</h3>
@@ -408,13 +460,13 @@
   <a href="mailto:251-23-006@diu.edu.bd" class="btn">Say Hello</a>
 </section>
 
-<!-- ওয়েবসাইটের ফুটার বা একদম নিচের অংশ -->
+<!-- ওয়েবসাইটের ফুটার বা একদম নিচের অংশ -->
 <footer>
   <p>© 2025 Shabin Shariar. All Rights Reserved.</p>
 </footer>
 
 <!-- =========================================
-     জাভাস্ক্রিপ্ট (ওয়েবসাইটের ফাংশনালিটি)
+     জাভাস্ক্রিপ্ট (ওয়েবসাইটের ফাংশনালিটি)
 ========================================= -->
 <script>
   // সাইড মেনু খোলার ফাংশন
@@ -433,7 +485,7 @@
   // আগে থেকে কোনো থিম সেভ করা আছে কিনা তা চেক করা হচ্ছে
   const currentTheme = localStorage.getItem('portfolioTheme');
   
-  // যদি ডার্ক থিম সেভ করা থাকে, তবে ওয়েবসাইট রিলোড হলেও ডার্ক থাকবে
+  // যদি ডার্ক থিম সেভ করা থাকে, তবে ওয়েবসাইট রিলোড হলেও ডার্ক থাকবে
   if (currentTheme === 'dark') {
     body.classList.add('dark-theme');
     themeBtn.innerText = '☀️';
@@ -451,7 +503,7 @@
     }
   }
 
-  // মেনুর লিংকে ক্লিক করলে স্মুথলি স্ক্রল করে সেই সেকশনে যাওয়ার কোড
+  // মেনুর লিংকে ক্লিক করলে স্মুথলি স্ক্রল করে সেই সেকশনে যাওয়ার কোড
   document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
     anchor.addEventListener("click", function(e){
       e.preventDefault();
@@ -459,7 +511,7 @@
     });
   });
 
-  // মেনুর বাইরে স্ক্রিনের অন্য কোথাও ক্লিক করলে মেনু নিজে নিজেই বন্ধ হয়ে যাবে
+  // মেনুর বাইরে স্ক্রিনের অন্য কোথাও ক্লিক করলে মেনু নিজে নিজেই বন্ধ হয়ে যাবে
   document.addEventListener("click", function(event){
     const menu = document.getElementById("sideMenu");
     const hamburger = document.querySelector(".hamburger");
