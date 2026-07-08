@@ -1,1 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Schedule</title>
+<style>
+  /* ডিফল্ট ভেরিয়েবল এবং গ্লাসমরফিজম ডিজাইন */
+  * { margin:0; padding:0; box-sizing:border-box; font-family:"Poppins", sans-serif; }
+  :root {
+    --bg-color: #f8fafc; --text-color: #475569; --heading-color: #0f172a;
+    --card-bg: rgba(255, 255, 255, 0.7); --border-color: rgba(226, 232, 240, 0.6);
+    --primary-color: #2563eb; --shadow-light: rgba(0,0,0,0.03);
+  }
+  body.dark-theme {
+    --bg-color: #0f172a; --text-color: #cbd5e1; --heading-color: #f8fafc;
+    --card-bg: rgba(30, 41, 59, 0.7); --border-color: rgba(51, 65, 85, 0.6);
+    --primary-color: #38bdf8;
+  }
+  body { 
+    background: var(--bg-color); color: var(--text-color); 
+    padding: 2rem 5%; transition: background 0.4s ease, color 0.4s ease;
+  }
+  
+  /* হেডার ডিজাইন */
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+  .back-btn { text-decoration: none; background: var(--primary-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; }
+  .day-title { font-size: 1.6rem; color: var(--heading-color); text-align: center; margin-bottom: 1rem; font-weight: 600; }
+  
+  /* ক্লাস কার্ডের ডিজাইন */
+  .schedule-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+  .class-card {
+    background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    padding: 20px; border-radius: 16px; border: 1px solid var(--border-color);
+    box-shadow: 0 4px 10px var(--shadow-light); display: flex; justify-content: space-between; align-items: center;
+    transition: all 0.3s ease;
+  }
+  
+  /* এক্সট্রা ক্লাসের ডিজাইন */
+  .class-card.extra-class { border: 2px solid var(--primary-color); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2); }
+  .extra-badge { color: var(--primary-color); font-size: 0.75rem; border: 1px solid; padding: 2px 8px; border-radius: 12px; margin-left: 10px; font-weight: bold; }
 
+  .class-info h3 { color: var(--heading-color); margin-bottom: 5px; display: flex; align-items: center; flex-wrap: wrap; }
+  .class-info p { font-size: 0.95rem; }
+  .class-time { text-align: right; min-width: 130px; }
+  .class-time .time { font-weight: 600; color: var(--primary-color); font-size: 1.1rem;}
+  .class-time .duration { font-size: 0.85rem; opacity: 0.8; }
+  
+  .no-class { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--heading-color); }
+  
+  /* ক্যালেন্ডার নেভিগেশন (সরাসরি স্লাইড করার সুবিধা) */
+  .days-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 2rem; flex-wrap: wrap; }
+  .day-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 15px; border-radius: 12px; cursor: pointer; transition: 0.3s; text-align: center; min-width: 75px; }
+  .day-btn:hover { background: rgba(37, 99, 235, 0.1); }
+  .day-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); transform: scale(1.05); }
+  .day-btn strong { display: block; font-size: 0.85rem; }
+  .day-btn span { font-size: 1.1rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back-btn">← Back</a>
+  <h2 class="day-title" id="currentDayTitle">Loading...</h2>
+  <div style="width: 80px;"></div>
+</div>
+
+<div class="days-nav" id="daysNav"></div>
+
+<div class="schedule-container" id="scheduleContainer"></div>
+
+<script>
+  // থিম ট্র্যাকিং
+  if (localStorage.getItem('portfolioTheme') === 'dark') {
+    document.body.classList.add('dark-theme');
+  }
+
+  // ইমেজ অনুযায়ী তোমার ফিক্সড রুটিন ডেটা
+  const weeklySchedule = {
+    "Saturday": [
+      { subject: "Textile Wet Processing I", time: "8:20 AM - 09:50 AM", duration: "1.5 Hours", room: "Room: E-202" },
+      { subject: "Art of Living and Engineering Ethics", time: "11:20 AM - 12:50 PM", duration: "1.5 Hours", room: "Room: DB-301" },
+      { subject: "Industrial Management", time: "01:10 PM - 02:40 PM", duration: "1.5 Hours", room: "Room: E-202" }
+    ],
+    "Sunday": [
+      { subject: "Apparel Manufacturing I", time: "09:50 AM - 11:20 AM", duration: "1.5 Hours", room: "Room: DB-302" },
+      { subject: "Art of Living and Engineering Ethics", time: "11:20 AM - 12:50 PM", duration: "1.5 Hours", room: "Room: DB-302" }
+    ],
+    "Monday": [
+      { subject: "Apparel Manufacturing I", time: "11:20 AM - 12:50 PM", duration: "1.5 Hours", room: "Room: DB-301" }
+    ],
+    "Tuesday": [
+      { subject: "Textile Wet Processing I", time: "8:20 AM - 09:50 AM", duration: "1.5 Hours", room: "Room: E-202" },
+      { subject: "Industrial Management", time: "11:20 AM - 12:50 PM", duration: "1.5 Hours", room: "Room: E-202" }
+    ],
+    "Wednesday": [
+      { subject: "Apparel Manufacturing I Sessional", time: "08:20 AM - 11:20 AM", duration: "3 Hours", room: "Room: G12" },
+      { subject: "Apparel Manufacturing I Sessional", time: "11:20 AM - 12:20 PM", duration: "1 Hour", room: "Room: G11" }
+    ],
+    "Thursday": [], 
+    "Friday": [] 
+  };
+
+  // ==========================================
+  // এক্সট্রা বা মেকআপ ক্লাস সাবমিট করার জায়গা
+  // (ফরম্যাট: "YYYY-MM-DD")
+  // ==========================================
+  const extraClasses = {
+    "2026-07-15": [
+      { subject: "Special Quiz / Lab Class", time: "02:00 PM - 04:00 PM", duration: "2 Hours", room: "Room: G15", isExtra: true }
+    ]
+  };
+
+  const daysOfWeekFull = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const daysOfWeekShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  
+  // পেছনের ৩ দিন, আজকের দিন এবং সামনের ৩ দিন (টোটাল ৭ দিন) এর ডেট অবজেক্ট তৈরি
+  let displayDates = [];
+  const todayDateObj = new Date();
+  
+  for(let i = -3; i <= 3; i++) {
+     let d = new Date();
+     d.setDate(todayDateObj.getDate() + i);
+     displayDates.push(d);
+  }
+
+  // ডেট ফরম্যাটিং ফাংশন
+  function getFormattedDateString(dateObj) {
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // রুটিন স্ক্রিনে দেখানোর মেইন ফাংশন
+  function renderSchedule(dateObj) {
+    const dayNameFull = daysOfWeekFull[dateObj.getDay()];
+    const dateString = getFormattedDateString(dateObj);
+    
+    // হেডারে সুন্দর করে ফুল ডেট দেখাবে
+    const displayDateTitle = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    document.getElementById("currentDayTitle").innerText = displayDateTitle;
+    
+    const container = document.getElementById("scheduleContainer");
+    container.innerHTML = ""; 
+    
+    // রেগুলার ও এক্সট্রা ক্লাস মার্জ করা
+    const regularClasses = weeklySchedule[dayNameFull] || [];
+    const specialClasses = extraClasses[dateString] || [];
+    const allClasses = [...regularClasses, ...specialClasses];
+
+    if (allClasses.length === 0) {
+      container.innerHTML = `<div class="no-class">🎉 No classes on this day! Enjoy your day.</div>`;
+      return;
+    }
+
+    // কার্ড তৈরি করা
+    allClasses.forEach(cls => {
+      const card = document.createElement("div");
+      card.className = `class-card ${cls.isExtra ? 'extra-class' : ''}`;
+      
+      const extraBadgeHTML = cls.isExtra ? `<span class="extra-badge">Extra Class</span>` : '';
+
+      card.innerHTML = `
+        <div class="class-info">
+          <h3>${cls.subject} ${extraBadgeHTML}</h3>
+          <p>${cls.room}</p>
+        </div>
+        <div class="class-time">
+          <div class="time">${cls.time}</div>
+          <div class="duration">${cls.duration}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // ইন্টারফেসের নেভিগেশন বার সেটআপ
+  function setupDaysNav() {
+    const navContainer = document.getElementById("daysNav");
+    const todayStr = getFormattedDateString(todayDateObj);
+    
+    displayDates.forEach((dateObj) => {
+      const btn = document.createElement("button");
+      const currentLoopDateStr = getFormattedDateString(dateObj);
+      const isToday = currentLoopDateStr === todayStr;
+      
+      // আজকের দিন হলে অটোমেটিক 'active' ক্লাস পাবে
+      if(isToday) {
+         btn.className = "day-btn active";
+      } else {
+         btn.className = "day-btn";
+      }
+      
+      const dayNameShort = isToday ? "Today" : daysOfWeekShort[dateObj.getDay()];
+      const dateNum = dateObj.getDate();
+      
+      btn.innerHTML = `<strong>${dayNameShort}</strong><span>${dateNum}</span>`;
+      
+      btn.onclick = () => {
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderSchedule(dateObj);
+      };
+      
+      navContainer.appendChild(btn);
+    });
+  }
+
+  // অ্যাপ্লিকেশন রান করা
+  setupDaysNav();
+  renderSchedule(todayDateObj); // সব সময় পেজ লোড হলেই কারেন্ট ডেটের ডাটা শো করবে
+</script>
+</body>
+</html>
