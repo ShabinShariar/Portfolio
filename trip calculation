@@ -1,0 +1,34 @@
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+
+  if (data.action === 'save') {
+    sheet.clear();
+    // A কলামে নাম এবং B কলামে ডেটা সেভ হবে
+    sheet.getRange("A1").setValue("trips");
+    sheet.getRange("B1").setValue(JSON.stringify(data.trips));
+
+    sheet.getRange("A2").setValue("expenses");
+    sheet.getRange("B2").setValue(JSON.stringify(data.expenses));
+
+    sheet.getRange("A3").setValue("targets");
+    sheet.getRange("B3").setValue(JSON.stringify(data.targets));
+
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var trips = sheet.getRange("B1").getValue() || "[]";
+  var expenses = sheet.getRange("B2").getValue() || "[]";
+  var targets = sheet.getRange("B3").getValue() || "{}";
+
+  var response = {
+    trips: JSON.parse(trips === "" ? "[]" : trips),
+    expenses: JSON.parse(expenses === "" ? "[]" : expenses),
+    targets: JSON.parse(targets === "" ? "{}" : targets)
+  };
+
+  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
+}
