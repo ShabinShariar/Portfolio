@@ -1,34 +1,326 @@
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trip Tracker - Premium</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary-color: #673AB7; --primary-light: #f0ecf9; --bg-color: #F8F9FE; --text-dark: #2c3e50; --text-light: #7f8c8d; }
+        body { margin: 0; font-family: 'Poppins', sans-serif; background-color: var(--bg-color); padding-bottom: 80px; color: var(--text-dark); }
+        
+        header { background: linear-gradient(135deg, #673AB7, #512DA8); color: white; padding: 20px 15px; text-align: center; font-size: 18px; font-weight: 600; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; }
+        
+        .tab-content { display: none; padding: 15px; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .date-picker-container { text-align: center; margin-bottom: 15px; margin-top: 5px; }
+        .custom-date { padding: 8px 15px; border-radius: 20px; border: none; color: var(--primary-color); background: var(--primary-light); font-weight: 600; font-size: 15px; font-family: 'Poppins', sans-serif; outline: none; cursor: pointer; }
+        
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card-header h3 { margin: 0; font-size: 16px; color: var(--text-dark); font-weight: 700; }
+        
+        .card-row { display: flex; justify-content: space-between; gap: 10px; }
+        .stat-box { flex: 1; text-align: center; background: var(--primary-light); padding: 15px 10px; border-radius: 12px; }
+        .stat-box h4 { margin: 0 0 5px 0; color: var(--text-light); font-size: 11px; text-transform: uppercase; }
+        .stat-box p { margin: 0; font-weight: 700; font-size: 16px; color: var(--primary-color); }
+        
+        .list-header { font-size: 15px; font-weight: 600; color: var(--text-dark); margin: 0 0 10px 5px; }
+        .list-item { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-color); }
+        .list-item.expense-item { border-left: 4px solid #ff4757; }
+        .item-info { display: flex; align-items: center; gap: 15px; }
+        .item-icon { background: var(--primary-light); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .expense-icon { background: #ffeaa7; }
+        .item-text h4 { margin: 0 0 3px 0; font-size: 14px; font-weight: 600; }
+        .item-text p { margin: 0; font-size: 12px; color: var(--text-light); }
+        .item-amount { font-weight: 700; font-size: 15px; }
+        
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); border-top-left-radius: 20px; border-top-right-radius: 20px; }
+        .nav-item { text-align: center; color: var(--text-light); cursor: pointer; font-size: 12px; flex: 1; padding: 5px 0; }
+        .nav-item .icon { font-size: 20px; display: block; margin-bottom: 3px; }
+        .nav-item.active { color: var(--primary-color); font-weight: 600; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: flex-end; backdrop-filter: blur(2px); }
+        .modal { background: white; width: 100%; padding: 30px 20px; border-radius: 25px 25px 0 0; box-sizing: border-box; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal h3 { margin-top: 0; color: var(--primary-color); font-size: 18px; text-align: center; margin-bottom: 20px;}
+        .modal input, .modal select { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #e0e0e0; border-radius: 12px; box-sizing: border-box; font-family: 'Poppins', sans-serif; font-size: 14px; background: #fafafa; outline: none;}
+        
+        .btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #673AB7, #512DA8); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; }
+        .btn.red { background: linear-gradient(135deg, #ff4757, #ff6b81); }
+        .btn.green { background: linear-gradient(135deg, #2ed573, #7bed9f); }
+        .btn.blue { background: linear-gradient(135deg, #1e90ff, #70a1ff); margin-top: 10px; }
+        
+        .fab { position: fixed; bottom: 85px; right: 20px; background: linear-gradient(135deg, #673AB7, #512DA8); color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; box-shadow: 0 4px 15px rgba(103, 58, 183, 0.4); cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 90;}
+    </style>
+</head>
+<body>
 
-  if (data.action === 'save') {
-    sheet.clear();
-    // A কলামে নাম এবং B কলামে ডেটা সেভ হবে
-    sheet.getRange("A1").setValue("trips");
-    sheet.getRange("B1").setValue(JSON.stringify(data.trips));
+    <header>Trip Tracker</header>
 
-    sheet.getRange("A2").setValue("expenses");
-    sheet.getRange("B2").setValue(JSON.stringify(data.expenses));
+    <!-- 1. Daily Tab -->
+    <div id="dailyTab" class="tab-content active">
+        <div class="date-picker-container">
+            <input type="date" id="datePicker" class="custom-date" onchange="updateUI()">
+        </div>
+        <div class="card">
+            <div class="card-header"><h3>Daily Summary</h3></div>
+            <div class="card-row">
+                <div class="stat-box"><h4>Trips</h4><p id="tTrips">0</p></div>
+                <div class="stat-box"><h4>Distance</h4><p id="tKm">0 km</p></div>
+                <div class="stat-box"><h4>Income</h4><p id="tInc" style="color:#2ed573;">TK 0</p></div>
+            </div>
+        </div>
+        <h3 class="list-header">Trip List</h3>
+        <div id="tripList"></div>
+        <button class="fab" onclick="openModal('tripModal')">＋</button>
+    </div>
 
-    sheet.getRange("A3").setValue("targets");
-    sheet.getRange("B3").setValue(JSON.stringify(data.targets));
+    <!-- 2. Dashboard Tab -->
+    <div id="dashboardTab" class="tab-content">
+        <!-- Google Sheets Sync Card -->
+        <div class="card" style="background: #f8f9fa; border: 1px solid #dfe6e9;">
+            <div class="card-header"><h3 style="color: var(--text-dark);">☁️ Cloud Sync (Google Drive)</h3></div>
+            <p style="font-size: 13px; color: var(--text-light); margin-top: 0;">Save your data to Google Sheets to prevent data loss.</p>
+            <button class="btn green" id="backupBtn" onclick="backupToCloud()">⬆ Backup Data to Cloud</button>
+            <button class="btn blue" id="restoreBtn" onclick="restoreFromCloud()">⬇ Restore Data from Cloud</button>
+        </div>
 
-    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
-  }
-}
+        <div class="card">
+            <div class="card-header"><h3 style="color: var(--primary-color);">Lifetime Overview</h3></div>
+            <div class="card-row">
+                <div class="stat-box"><h4>Income</h4><p id="lifeInc" style="color:#2ed573;">TK 0</p></div>
+                <div class="stat-box"><h4>Expense</h4><p id="lifeExp" style="color:#ff4757;">TK 0</p></div>
+                <div class="stat-box"><h4>Net Profit</h4><p id="lifeProf" style="color:#1e90ff;">TK 0</p></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 style="color: var(--primary-color);">Daily Overview</h3>
+                <input type="date" id="dashDatePicker" class="custom-date" style="padding: 5px 10px; font-size: 13px;" onchange="updateUI()">
+            </div>
+            <div class="card-row">
+                <div class="stat-box"><h4>Income</h4><p id="dashDailyInc" style="color:#2ed573;">TK 0</p></div>
+                <div class="stat-box"><h4>Expense</h4><p id="dashDailyExp" style="color:#ff4757;">TK 0</p></div>
+                <div class="stat-box"><h4>Profit</h4><p id="dashDailyProf" style="color:#1e90ff;">TK 0</p></div>
+            </div>
+        </div>
+        <h3 class="list-header">Recent Expenses</h3>
+        <div id="expenseList"></div>
+        <button class="fab" style="background: linear-gradient(135deg, #ff4757, #ff6b81);" onclick="openModal('expenseModal')">＋</button>
+    </div>
 
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var trips = sheet.getRange("B1").getValue() || "[]";
-  var expenses = sheet.getRange("B2").getValue() || "[]";
-  var targets = sheet.getRange("B3").getValue() || "{}";
+    <!-- 3. Target Tab -->
+    <div id="targetTab" class="tab-content">
+        <div class="card" style="text-align: center; padding-top: 30px; padding-bottom: 30px;">
+            <h3 style="color: var(--text-dark); font-size: 16px; margin-top:0;">Monthly Target Progress</h3>
+            <h1 id="targetPercentage" style="font-size: 48px; margin: 15px 0; font-weight: 700;">0%</h1>
+            <p style="color: var(--text-light); font-weight: 600;">Earned: <span style="color:#2ed573;">TK <span id="targetEarned">0</span></span> / TK <span id="targetAmount">0</span></p>
+        </div>
+        <div class="card">
+            <h3 style="font-size: 14px; margin-top:0; color: var(--text-light);">Update This Month's Target</h3>
+            <input type="number" id="newTargetInput" placeholder="Enter target amount (TK)" style="width:100%; padding:15px; margin:10px 0; border:1px solid #e0e0e0; border-radius:12px; box-sizing:border-box; font-family: 'Poppins', sans-serif;">
+            <button class="btn green" onclick="updateTarget()">Save Target</button>
+        </div>
+    </div>
 
-  var response = {
-    trips: JSON.parse(trips === "" ? "[]" : trips),
-    expenses: JSON.parse(expenses === "" ? "[]" : expenses),
-    targets: JSON.parse(targets === "" ? "{}" : targets)
-  };
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('dailyTab', this)"><span class="icon">📅</span> Daily</div>
+        <div class="nav-item" onclick="switchTab('dashboardTab', this)"><span class="icon">📊</span> Dashboard</div>
+        <div class="nav-item" onclick="switchTab('targetTab', this)"><span class="icon">🎯</span> Target</div>
+    </div>
 
-  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
-}
+    <!-- Modals -->
+    <div id="tripModal" class="modal-overlay" onclick="closeModal(event, 'tripModal')">
+        <div class="modal">
+            <h3>Add New Trip</h3>
+            <input type="number" id="tripKm" placeholder="Distance (KM)">
+            <input type="number" id="tripIncome" placeholder="Total Income (TK)">
+            <button class="btn" onclick="saveTrip()">Save Trip</button>
+        </div>
+    </div>
+    <div id="expenseModal" class="modal-overlay" onclick="closeModal(event, 'expenseModal')">
+        <div class="modal">
+            <h3 style="color: #ff4757;">Record Expense</h3>
+            <select id="expCat">
+                <option value="Penalty">Penalty</option>
+                <option value="Parts Cost">Parts Cost</option>
+                <option value="Service Cost">Service Cost</option>
+                <option value="Fuel / Gas">Fuel / Gas</option>
+            </select>
+            <input type="number" id="expAmt" placeholder="Amount (TK)">
+            <input type="text" id="expNote" placeholder="Note (Optional)">
+            <button class="btn red" onclick="saveExpense()">Save Expense</button>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================
+        // ⚠️ আপনার গুগল শিটের Web App URL টি এখানে পেস্ট করুন:
+        // ========================================================
+        const GOOGLE_APP_SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE"; 
+        
+        let allTrips = JSON.parse(localStorage.getItem('my_trips')) || [];
+        let allExpenses = JSON.parse(localStorage.getItem('my_expenses')) || [];
+        let targets = JSON.parse(localStorage.getItem('my_targets')) || {};
+
+        window.onload = () => {
+            let today = new Date().toISOString().split('T')[0];
+            document.getElementById('datePicker').value = today;
+            document.getElementById('dashDatePicker').value = today;
+            updateUI();
+        };
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            updateUI();
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
+        function forceCloseModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function saveTrip() {
+            let km = parseFloat(document.getElementById('tripKm').value) || 0;
+            let inc = parseFloat(document.getElementById('tripIncome').value) || 0;
+            if(km === 0 && inc === 0) return alert("Please enter valid values!");
+            let selectedDate = document.getElementById('datePicker').value;
+            allTrips.push({ km: km, income: inc, date: selectedDate, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            localStorage.setItem('my_trips', JSON.stringify(allTrips));
+            document.getElementById('tripKm').value = '';
+            document.getElementById('tripIncome').value = '';
+            forceCloseModal('tripModal');
+            updateUI();
+        }
+
+        function saveExpense() {
+            let cat = document.getElementById('expCat').value;
+            let amt = parseFloat(document.getElementById('expAmt').value) || 0;
+            let note = document.getElementById('expNote').value;
+            if(amt <= 0) return alert("Please enter a valid amount!");
+            let selectedDashDate = document.getElementById('dashDatePicker').value;
+            allExpenses.push({ category: cat, amount: amt, date: selectedDashDate, note: note });
+            localStorage.setItem('my_expenses', JSON.stringify(allExpenses));
+            document.getElementById('expAmt').value = '';
+            document.getElementById('expNote').value = '';
+            forceCloseModal('expenseModal');
+            updateUI();
+        }
+
+        function updateTarget() {
+            let currentMonth = new Date().toISOString().slice(0, 7); 
+            let newT = parseFloat(document.getElementById('newTargetInput').value) || 0;
+            targets[currentMonth] = newT;
+            localStorage.setItem('my_targets', JSON.stringify(targets));
+            updateUI();
+            alert("Target successfully updated!");
+        }
+
+        function updateUI() {
+            let selectedDate = document.getElementById('datePicker').value;
+            let dInc = 0, dKm = 0; let tripsHtml = '';
+            let todaysTrips = allTrips.filter(t => t.date === selectedDate);
+            todaysTrips.slice().reverse().forEach(t => {
+                dInc += t.income; dKm += t.km;
+                tripsHtml += `<div class="list-item"><div class="item-info"><div class="item-icon">🚕</div><div class="item-text"><h4>${t.km} KM Route</h4><p>${t.time}</p></div></div><div class="item-amount" style="color:#2ed573;">TK ${t.income}</div></div>`;
+            });
+            document.getElementById('tTrips').innerText = todaysTrips.length;
+            document.getElementById('tKm').innerText = dKm + " km";
+            document.getElementById('tInc').innerText = "TK " + dInc;
+            document.getElementById('tripList').innerHTML = tripsHtml || '<p style="text-align:center;color:#bdc3c7; font-size: 14px; margin-top:20px;">No trips added for this date.</p>';
+
+            let lInc = 0, lExp = 0;
+            allTrips.forEach(t => lInc += t.income);
+            allExpenses.forEach(e => lExp += e.amount);
+            document.getElementById('lifeInc').innerText = "TK " + lInc;
+            document.getElementById('lifeExp').innerText = "TK " + lExp;
+            document.getElementById('lifeProf').innerText = "TK " + (lInc - lExp);
+
+            let dashSelectedDate = document.getElementById('dashDatePicker').value;
+            let dashDailyInc = 0, dashDailyExp = 0;
+            allTrips.filter(t => t.date === dashSelectedDate).forEach(t => dashDailyInc += t.income);
+            allExpenses.filter(e => e.date === dashSelectedDate).forEach(e => dashDailyExp += e.amount);
+            document.getElementById('dashDailyInc').innerText = "TK " + dashDailyInc;
+            document.getElementById('dashDailyExp').innerText = "TK " + dashDailyExp;
+            document.getElementById('dashDailyProf').innerText = "TK " + (dashDailyInc - dashDailyExp);
+
+            let expHtml = '';
+            allExpenses.slice().reverse().forEach(e => {
+                expHtml += `<div class="list-item expense-item"><div class="item-info"><div class="item-icon expense-icon">💸</div><div class="item-text"><h4>${e.category}</h4><p>${e.date} ${e.note ? ' • ' + e.note : ''}</p></div></div><div class="item-amount" style="color:#ff4757;">- TK ${e.amount}</div></div>`;
+            });
+            document.getElementById('expenseList').innerHTML = expHtml || '<p style="text-align:center;color:#bdc3c7; font-size: 14px; margin-top:20px;">No expenses recorded.</p>';
+
+            let currentMonthStr = new Date().toISOString().slice(0, 7); 
+            let curTarget = targets[currentMonthStr] || 0; let curMonthEarned = 0;
+            allTrips.forEach(t => { if(t.date.startsWith(currentMonthStr)) curMonthEarned += t.income; });
+            let percent = curTarget > 0 ? Math.min((curMonthEarned / curTarget) * 100, 100).toFixed(1) : 0;
+            document.getElementById('targetPercentage').innerText = percent + "%";
+            document.getElementById('targetPercentage').style.color = percent >= 100 ? "#2ed573" : "var(--primary-color)";
+            document.getElementById('targetEarned').innerText = curMonthEarned;
+            document.getElementById('targetAmount').innerText = curTarget;
+        }
+
+        // =====================================
+        // GOOGLE SHEETS SYNC FUNCTIONS
+        // =====================================
+        async function backupToCloud() {
+            if(GOOGLE_APP_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_URL_HERE") return alert("Please add your Google Script URL in the code first!");
+            
+            let btn = document.getElementById('backupBtn');
+            btn.innerText = "⏳ Saving to Cloud...";
+            
+            let payload = { action: 'save', trips: allTrips, expenses: allExpenses, targets: targets };
+            
+            try {
+                await fetch(GOOGLE_APP_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                alert("✅ Backup Successful! Data saved to Google Sheets.");
+            } catch (err) {
+                alert("❌ Backup failed. Check your internet connection.");
+            }
+            btn.innerText = "⬆ Backup Data to Cloud";
+        }
+
+        async function restoreFromCloud() {
+            if(GOOGLE_APP_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_URL_HERE") return alert("Please add your Google Script URL in the code first!");
+            
+            let confirmRestore = confirm("Are you sure? This will replace your current data with the data from Google Sheets.");
+            if(!confirmRestore) return;
+
+            let btn = document.getElementById('restoreBtn');
+            btn.innerText = "⏳ Downloading Data...";
+
+            try {
+                let response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                let data = await response.json();
+                
+                if(data) {
+                    allTrips = data.trips || [];
+                    allExpenses = data.expenses || [];
+                    targets = data.targets || {};
+                    
+                    localStorage.setItem('my_trips', JSON.stringify(allTrips));
+                    localStorage.setItem('my_expenses', JSON.stringify(allExpenses));
+                    localStorage.setItem('my_targets', JSON.stringify(targets));
+                    
+                    updateUI();
+                    alert("✅ Data Restored Successfully!");
+                }
+            } catch (err) {
+                alert("❌ Restore failed. Make sure your Script URL is correct.");
+            }
+            btn.innerText = "⬇ Restore Data from Cloud";
+        }
+    </script>
+</body>
+</html>
