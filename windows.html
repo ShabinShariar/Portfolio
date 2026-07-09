@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Windows Activation Panel</title>
 
+  <!-- Google Fonts: Fira Code -->
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
     body {
       margin: 0;
       padding: 0;
-      padding-top: 12vh; /* বক্সটিকে একটু উপরে তোলার জন্য */
+      padding-top: 12vh; 
       background: #000;
       color: #00ff99;
       font-family: 'Fira Code', monospace;
       display: flex;
       justify-content: center;
-      align-items: flex-start; /* সেন্টার থেকে সরিয়ে উপরে নেওয়া হয়েছে */
+      align-items: flex-start;
       min-height: 100vh;
       box-sizing: border-box;
       overflow-x: hidden;
@@ -81,15 +82,25 @@
       border-bottom: 1px solid rgba(0, 255, 153, 0.2);
     }
 
+    /* Animated Dots for Terminal Header */
     .dot {
       width: 12px;
       height: 12px;
       border-radius: 50%;
       margin-right: 8px;
+      animation: blinkSequence 1.5s infinite ease-in-out;
     }
-    .dot.red { background: #ff5f56; }
-    .dot.yellow { background: #ffbd2e; }
-    .dot.green { background: #27c93f; }
+    
+    @keyframes blinkSequence {
+      0% { opacity: 0.3; transform: scale(0.8); }
+      20% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px currentColor; }
+      40%, 100% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    /* Adding colors and delays for sequential blinking */
+    .dot.red { background: #ff5f56; color: #ff5f56; animation-delay: 0s; }
+    .dot.yellow { background: #ffbd2e; color: #ffbd2e; animation-delay: 0.2s; }
+    .dot.green { background: #27c93f; color: #27c93f; animation-delay: 0.4s; }
 
     .terminal-title {
       color: #888;
@@ -181,6 +192,7 @@
   <h1>⚡ ACCESS GRANTED ⚡</h1>
   <p>Windows Activation Security Panel</p>
 
+  <!-- Terminal Window -->
   <div class="terminal-box">
     <div class="terminal-header">
       <div class="dot red"></div>
@@ -239,7 +251,7 @@
   canvas.width = window.innerWidth;
 
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
-  const fontSize = 14; // ফন্ট সাইজ কমিয়ে কলাম বাড়ানো হয়েছে (ঘনত্বের জন্য)
+  const fontSize = 14; 
   const columns = canvas.width / fontSize;
 
   const drops = [];
@@ -248,17 +260,15 @@
   }
 
   function draw() {
-    // আগের মতো 0.05 অপাসিটি ব্যবহার করা হয়েছে যাতে লেজ (tail) লম্বা হয় এবং ঘন লাগে
     ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "#00ff99";
-    ctx.font = "bold " + fontSize + "px monospace"; // ফন্ট বোল্ড করা হয়েছে
+    ctx.font = "bold " + fontSize + "px monospace";
 
     for (let i = 0; i < drops.length; i++) {
       const text = letters.charAt(Math.floor(Math.random() * letters.length));
       
-      // গ্লো ইফেক্ট
       ctx.shadowBlur = 3;
       ctx.shadowColor = "#00ff99";
       
@@ -278,7 +288,6 @@
     canvas.width = window.innerWidth;
   });
 
-  // স্পিড একটু কমিয়ে দেওয়া হয়েছে যাতে সুন্দরভাবে বোঝা যায়
   setInterval(draw, 35);
 </script>
 
