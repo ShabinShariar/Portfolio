@@ -115,17 +115,34 @@
         .btn-edit { background: var(--bg-color); color: var(--text-primary); }
         .btn-delete { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
 
-        /* MODAL FIX: Make form scrollable inside, keep buttons fixed */
+        /* --- PERFECT MODAL FIX FOR MOBILE --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         
-        .modal { width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+        .modal { 
+            width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; 
+            border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; 
+            max-height: 80vh; /* Reduced slightly to ensure keyboard space */
+            display: flex; flex-direction: column; 
+        }
         .modal-overlay.active .modal { transform: translateY(0); }
         
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
         
-        /* New scrollable area for form */
-        .scrollable-form { overflow-y: auto; flex-grow: 1; padding-right: 5px; margin-bottom: 10px; }
+        #itemForm { 
+            display: flex; 
+            flex-direction: column; 
+            flex: 1; 
+            min-height: 0; /* Magic fix for nested flexbox scrolling */
+        }
+        
+        .scrollable-form { 
+            overflow-y: auto; 
+            flex: 1; 
+            min-height: 0; /* Magic fix for nested flexbox scrolling */
+            padding-right: 5px; 
+            margin-bottom: 10px; 
+        }
         
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .span-2 { grid-column: span 1; }
@@ -133,8 +150,12 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 14px; outline: none; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); }
         
-        /* Actions fixed at bottom */
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); flex-shrink: 0; }
+        /* Actions perfectly fixed at bottom */
+        .modal-actions { 
+            display: flex; justify-content: flex-end; gap: 10px; 
+            padding-top: 15px; border-top: 1px solid var(--border-color); 
+            flex-shrink: 0; background: var(--surface-color);
+        }
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: var(--text-primary); color: var(--bg-color); padding: 12px 20px; border-radius: 30px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); animation: dropDown 0.3s ease; }
@@ -262,8 +283,8 @@
                 <h2 id="modalTitle" style="font-size: 1.2rem;">Add New Item</h2>
                 <button class="icon-btn close-modal" type="button"><i data-feather="x"></i></button>
             </div>
-            <!-- Form body is set to flex for scrollable content -->
-            <form id="itemForm" style="display: flex; flex-direction: column; overflow: hidden; flex-grow: 1;">
+            <!-- Removed inline styles from form, handled in CSS -->
+            <form id="itemForm">
                 <input type="hidden" id="itemId">
                 
                 <div class="scrollable-form">
