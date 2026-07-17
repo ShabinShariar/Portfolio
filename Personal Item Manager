@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Personal Item Manager</title>
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --surface-color: #ffffff;
+            --text-primary: #1c1e21;
+            --text-secondary: #65676b;
+            --primary-color: #0866ff;
+            --primary-hover: #0054d1;
+            --border-color: #e4e6eb;
+            --danger-color: #e41e3f;
+            --success-color: #31a24c;
+            --warning-color: #f59e0b;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #18191a;
+            --surface-color: #242526;
+            --text-primary: #e4e6eb;
+            --text-secondary: #b0b3b8;
+            --border-color: #3a3b3c;
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+        body { background-color: var(--bg-color); color: var(--text-primary); font-size: 14px; -webkit-tap-highlight-color: transparent; }
+
+        /* Layout */
+        .app-container { display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--surface-color); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 1.5rem 1rem; transition: 0.3s; }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; color: var(--primary-color); margin-bottom: 2rem; padding: 0 0.5rem; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; text-decoration: none; color: var(--text-secondary); border-radius: var(--radius-md); font-weight: 600; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: var(--bg-color); color: var(--primary-color); }
+        .nav-item.active { background: rgba(8, 102, 255, 0.1); }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 0; }
+        .topbar { position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: var(--surface-color); border-bottom: 1px solid var(--border-color); }
+        .search-bar { display: flex; align-items: center; background: var(--bg-color); padding: 8px 16px; border-radius: 20px; flex: 1; max-width: 400px; }
+        .search-bar input { border: none; background: transparent; padding: 0 10px; width: 100%; outline: none; color: var(--text-primary); }
+        .topbar-actions { display: flex; gap: 12px; margin-left: 15px;}
+        .icon-btn { background: var(--bg-color); border: none; color: var(--text-primary); cursor: pointer; padding: 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .icon-btn:hover { background: var(--border-color); }
+        
+        .btn { padding: 10px 20px; border-radius: var(--radius-md); border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; transition: 0.2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--bg-color); color: var(--text-primary); }
+        .fab { position: fixed; bottom: 80px; right: 20px; background: var(--primary-color); color: white; width: 56px; height: 56px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(8, 102, 255, 0.4); border: none; z-index: 90; cursor: pointer; }
+
+        .view-container { padding: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { padding: 1.2rem; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); }
+        
+        .budget-card { background: var(--surface-color); padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+        .budget-info { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .budget-spent { font-size: 2rem; font-weight: 700; color: var(--primary-color); }
+        .budget-total { font-size: 1rem; color: var(--text-secondary); font-weight: 600; }
+        .progress-bar-container { height: 10px; background: var(--bg-color); border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
+        .progress-bar { height: 100%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease; }
+        
+        .filters-container { display: flex; gap: 10px; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 5px; }
+        .filters-container::-webkit-scrollbar { height: 4px; }
+        .filters-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .custom-select { padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-primary); font-size: 13px; outline: none; font-weight: 500; white-space: nowrap; }
+
+        .list-body { display: flex; flex-direction: column; gap: 10px; }
+        .item-card { background: var(--surface-color); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; transition: 0.2s; box-shadow: var(--shadow-sm); }
+        .item-card:hover { border-color: var(--primary-color); }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;}
+        .item-price { font-size: 1.1rem; font-weight: 700; color: var(--primary-color); }
+        .item-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-secondary); }
+        .meta-text { display: flex; align-items: center; gap: 4px; }
+        .meta-text i { width: 14px; height: 14px; }
+        .item-link { color: var(--primary-color); text-decoration: none; }
+        
+        .item-badges { display: flex; gap: 6px; }
+        .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
+        .badge.cat { background: var(--bg-color); color: var(--text-secondary); }
+        .badge.status-purchased { background: rgba(49, 162, 76, 0.1); color: var(--success-color); }
+        .badge.status-need { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .badge.priority-high { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
+
+        .item-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .action-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 4px; }
+        .btn-buy { background: rgba(49, 162, 76, 0.1); color: var(--success-color); }
+        .btn-edit { background: var(--bg-color); color: var(--text-primary); }
+        .btn-delete { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal { width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .span-2 { grid-column: span 1; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 14px; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--text-primary); color: var(--bg-color); padding: 12px 20px; border-radius: 30px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); animation: dropDown 0.3s ease; }
+        @keyframes dropDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        @media (min-width: 769px) {
+            .modal { border-radius: var(--radius-lg); transform: scale(0.9); align-self: center; }
+            .modal-overlay.active .modal { transform: scale(1); }
+            .span-2 { grid-column: span 2; }
+            .fab { display: none; }
+            .item-card { flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px; }
+            .item-header { flex-direction: column; width: 30%; }
+            .item-meta { width: 40%; }
+            .item-actions { border-top: none; padding-top: 0; margin-top: 0; width: 30%; }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .sidebar { position: fixed; bottom: 0; width: 100%; height: 65px; flex-direction: row; padding: 0; z-index: 50; justify-content: space-around; align-items: center; border-top: 1px solid var(--border-color); border-right: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+            .logo, .btn-new-desktop { display: none; }
+            .nav-menu { flex-direction: row; width: 100%; justify-content: space-around; margin: 0; }
+            .nav-item { flex-direction: column; gap: 4px; font-size: 11px; padding: 8px; border-radius: 0; }
+            .nav-item i { width: 20px; height: 20px; }
+            .main-content { padding-bottom: 80px; }
+            .fab { display: flex; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } /* 2x2 grid on mobile */
+            .stat-card { padding: 1rem; }
+            .stat-value { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Bottom Nav -->
+        <aside class="sidebar">
+            <div class="logo"><i data-feather="grid"></i><h2>ItemManager</h2></div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard"><i data-feather="pie-chart"></i> <span>Dashboard</span></a>
+                <a href="#" class="nav-item" data-view="items"><i data-feather="list"></i> <span>Shopping List</span></a>
+            </nav>
+            <div class="btn-new-desktop" style="margin-top: auto;">
+                <button class="btn btn-primary" id="btnNewItem" style="width: 100%;"><i data-feather="plus"></i> New Item</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="search-bar">
+                    <i data-feather="search" style="color: var(--text-secondary); width: 18px;"></i>
+                    <input type="text" id="searchInput" placeholder="Search items...">
+                </div>
+                <div class="topbar-actions">
+                    <button class="icon-btn" id="btnThemeToggle"><i data-feather="moon"></i></button>
+                    <button class="icon-btn" id="btnExport"><i data-feather="download"></i></button>
+                </div>
+            </header>
+
+            <div class="view-container" id="viewsContainer">
+                
+                <!-- Dashboard View -->
+                <section id="dashboardView" class="view active">
+                    <h1 class="page-title">Overview</h1>
+                    
+                    <div class="stats-grid" id="dashboardStats">
+                        <!-- Stats Injected via JS -->
+                    </div>
+                    
+                    <div class="budget-card">
+                        <div class="budget-info">
+                            <div>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Monthly Expense for:</span>
+                                    <input type="month" id="expenseMonth" class="custom-select" style="padding: 4px 8px;">
+                                </div>
+                                <div class="budget-spent" id="budgetSpentText">৳ 0</div>
+                            </div>
+                            <div class="budget-total" id="budgetTotalText">Budget: ৳ 0</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="budgetProgress"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Items View -->
+                <section id="itemsView" class="view">
+                    <h1 class="page-title">Shopping List</h1>
+                    
+                    <div class="filters-container">
+                        <select id="filterStatus" class="custom-select">
+                            <option value="Need to Buy" selected>Status: Need to Buy</option>
+                            <option value="Purchased">Status: Purchased</option>
+                            <option value="all">Status: All</option>
+                        </select>
+                        <select id="filterCategory" class="custom-select"><option value="all">All Categories</option></select>
+                        <select id="sortItems" class="custom-select">
+                            <option value="newest">Newest First</option>
+                            <option value="priceDesc">Price: High to Low</option>
+                            <option value="priceAsc">Price: Low to High</option>
+                            <option value="deadline">Closest Deadline</option>
+                        </select>
+                    </div>
+
+                    <div class="list-body" id="itemsList"></div>
+                </section>
+            </div>
+        </main>
+        
+        <button class="fab" id="btnFabNewItem"><i data-feather="plus"></i></button>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal-overlay" id="itemModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle" style="font-size: 1.2rem;">Add New Item</h2>
+                <button class="icon-btn close-modal" type="button"><i data-feather="x"></i></button>
+            </div>
+            <form id="itemForm">
+                <input type="hidden" id="itemId">
+                <div class="form-grid">
+                    <div class="form-group span-2">
+                        <label>Item Name *</label>
+                        <input type="text" id="itemName" required placeholder="e.g. Engine Oil">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="itemCategory"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="itemStatus">
+                            <option value="Need to Buy">Need to Buy</option>
+                            <option value="Purchased">Purchased</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estimated Price (৳)</label>
+                        <input type="number" id="itemPrice" min="0" step="1" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="itemPriority">
+                            <option value="High">High</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Shop / Location</label>
+                        <input type="text" id="itemShop" placeholder="e.g. Bashundhara City">
+                    </div>
+                    <div class="form-group">
+                        <label>Deadline (Date)</label>
+                        <input type="date" id="itemDeadline">
+                    </div>
+                    <div class="form-group span-2">
+                        <label>Product Link (URL)</label>
+                        <input type="url" id="itemLink" placeholder="https://daraz.com.bd/...">
+                    </div>
+                    <div class="form-group span-2">
+                        <label>Notes</label>
+                        <textarea id="itemNotes" rows="2" placeholder="Any extra details..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary close-modal" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Core -->
+    <script>
+        const Utils = {
+            generateId: () => '_' + Math.random().toString(36).substr(2, 9),
+            formatBDT: (amount) => '৳ ' + (amount || 0).toLocaleString('en-IN'),
+            formatDate: (dateStr) => {
+                if(!dateStr) return '';
+                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                return new Date(dateStr).toLocaleDateString('en-GB', options);
+            },
+            getCurrentMonthStr: () => {
+                const now = new Date();
+                return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            },
+            exportToJSON: (data) => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+                const link = document.createElement("a");
+                link.setAttribute("href", dataStr); link.setAttribute("download", "item_manager_backup.json");
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            }
+        };
+
+        class StorageManager {
+            constructor() {
+                this.DB_KEY = 'PIM_Data_BD';
+                this.SETTINGS_KEY = 'PIM_Settings_BD';
+                this.initializeDB();
+            }
+            initializeDB() {
+                if (!localStorage.getItem(this.DB_KEY)) {
+                    localStorage.setItem(this.DB_KEY, JSON.stringify({
+                        items: [],
+                        categories: ['Electronics', 'Bike', 'Study Materials', 'Gadgets', 'Clothing', 'Home', 'Grocery', 'Others'],
+                        budget: 20000 
+                    }));
+                }
+                if (!localStorage.getItem(this.SETTINGS_KEY)) {
+                    localStorage.setItem(this.SETTINGS_KEY, JSON.stringify({ theme: 'light', hideTotalSpent: false }));
+                }
+            }
+            getData() { return JSON.parse(localStorage.getItem(this.DB_KEY)); }
+            saveData(data) { localStorage.setItem(this.DB_KEY, JSON.stringify(data)); }
+            getSettings() { return JSON.parse(localStorage.getItem(this.SETTINGS_KEY)); }
+            saveSettings(settings) { localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings)); }
+            
+            getItems() { return this.getData().items || []; }
+            getItem(id) { return this.getItems().find(i => i.id === id); }
+            saveItem(itemData) {
+                const data = this.getData();
+                const index = data.items.findIndex(i => i.id === itemData.id);
+                
+                if (itemData.status === 'Purchased' && !itemData.purchasedMonth) {
+                    itemData.purchasedMonth = Utils.getCurrentMonthStr();
+                } else if (itemData.status === 'Need to Buy') {
+                    itemData.purchasedMonth = null;
+                }
+
+                if (index >= 0) { data.items[index] = { ...data.items[index], ...itemData }; } 
+                else { itemData.id = Utils.generateId(); itemData.created = new Date().getTime(); data.items.unshift(itemData); }
+                this.saveData(data);
+            }
+            deleteItem(id) {
+                const data = this.getData();
+                data.items = data.items.filter(i => i.id !== id);
+                this.saveData(data);
+            }
+            getCategories() { return this.getData().categories; }
+            
+            getStats(targetMonth) {
+                const items = this.getItems();
+                const needToBuyList = items.filter(i => i.status === 'Need to Buy');
+                const allPurchased = items.filter(i => i.status === 'Purchased');
+                const purchasedThisMonth = allPurchased.filter(i => i.purchasedMonth === targetMonth);
+                
+                return {
+                    total: items.length,
+                    needToBuy: needToBuyList.length,
+                    purchasedCount: allPurchased.length,
+                    totalEstCost: needToBuyList.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0),
+                    spentThisMonth: purchasedThisMonth.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0),
+                    totalSpentAllTime: allPurchased.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0),
+                    budget: this.getData().budget
+                };
+            }
+        }
+        const db = new StorageManager();
+
+        class UI {
+            static init() { 
+                UI.loadTheme(); 
+                UI.populateCategories(); 
+                document.getElementById('expenseMonth').value = Utils.getCurrentMonthStr();
+                UI.renderDashboard(); 
+                UI.renderItems(); 
+                feather.replace(); 
+            }
+            
+            static showToast(message) {
+                const container = document.createElement('div'); container.className = 'toast-container';
+                const toast = document.createElement('div'); toast.className = 'toast';
+                toast.innerHTML = `<i data-feather="check-circle" style="color: var(--success-color)"></i> <span>${message}</span>`;
+                container.appendChild(toast); document.body.appendChild(container); feather.replace();
+                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => container.remove(), 300); }, 2500);
+            }
+            
+            static loadTheme() { document.documentElement.setAttribute('data-theme', db.getSettings().theme); }
+            static toggleTheme() {
+                const settings = db.getSettings();
+                settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+                db.saveSettings(settings); UI.loadTheme();
+            }
+            
+            static populateCategories() {
+                const categories = db.getCategories();
+                const select = document.getElementById('itemCategory'), filterSelect = document.getElementById('filterCategory');
+                select.innerHTML = ''; filterSelect.innerHTML = '<option value="all">All Categories</option>';
+                categories.forEach(cat => {
+                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    filterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            }
+            
+            static renderDashboard() {
+                const selectedMonth = document.getElementById('expenseMonth').value;
+                const stats = db.getStats(selectedMonth);
+                const settings = db.getSettings();
+                
+                const eyeIcon = settings.hideTotalSpent ? 'eye-off' : 'eye';
+                const totalSpentDisplay = settings.hideTotalSpent ? '৳ •••••' : Utils.formatBDT(stats.totalSpentAllTime);
+
+                document.getElementById('dashboardStats').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-header"><span>To Buy</span> <i data-feather="shopping-cart"></i></div>
+                        <div class="stat-value" style="color: var(--warning-color)">${stats.needToBuy}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span>Purchased Items</span> <i data-feather="check-square"></i></div>
+                        <div class="stat-value" style="color: var(--success-color)">${stats.purchasedCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span>Upcoming Cost</span> <i data-feather="credit-card"></i></div>
+                        <div class="stat-value">${Utils.formatBDT(stats.totalEstCost)}</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(49, 162, 76, 0.05); border-color: rgba(49, 162, 76, 0.2);">
+                        <div class="stat-header">
+                            <span style="color: var(--success-color)">Total Spent</span> 
+                            <button id="toggleEyeBtn" class="icon-btn" style="padding: 2px; background: transparent;"><i data-feather="${eyeIcon}" style="color: var(--text-secondary); width: 16px; height: 16px;"></i></button>
+                        </div>
+                        <div class="stat-value" style="color: var(--success-color)">${totalSpentDisplay}</div>
+                    </div>
+                `;
+
+                // Eye Toggle Event
+                document.getElementById('toggleEyeBtn').addEventListener('click', () => {
+                    settings.hideTotalSpent = !settings.hideTotalSpent;
+                    db.saveSettings(settings);
+                    UI.renderDashboard();
+                });
+                
+                const budgetPercent = stats.budget > 0 ? Math.min((stats.spentThisMonth / stats.budget) * 100, 100) : 0;
+                const progressBar = document.getElementById('budgetProgress');
+                
+                document.getElementById('budgetSpentText').innerText = Utils.formatBDT(stats.spentThisMonth);
+                document.getElementById('budgetTotalText').innerText = `Budget: ${Utils.formatBDT(stats.budget)}`;
+                progressBar.style.width = `${budgetPercent}%`;
+                
+                if(budgetPercent > 90) progressBar.style.backgroundColor = 'var(--danger-color)'; 
+                else progressBar.style.backgroundColor = 'var(--primary-color)'; 
+                
+                feather.replace();
+            }
+
+            static renderItems() {
+                let items = db.getItems();
+                const listBody = document.getElementById('itemsList');
+                
+                const query = document.getElementById('searchInput').value.toLowerCase();
+                const filterCat = document.getElementById('filterCategory').value;
+                const filterStat = document.getElementById('filterStatus').value;
+                const sortType = document.getElementById('sortItems').value;
+
+                if (query) items = items.filter(i => i.name.toLowerCase().includes(query) || (i.shop && i.shop.toLowerCase().includes(query)));
+                if (filterCat !== 'all') items = items.filter(i => i.category === filterCat);
+                if (filterStat !== 'all') items = items.filter(i => i.status === filterStat);
+                
+                if (sortType === 'newest') items.sort((a,b) => b.created - a.created);
+                if (sortType === 'priceDesc') items.sort((a,b) => b.price - a.price);
+                if (sortType === 'priceAsc') items.sort((a,b) => a.price - b.price);
+                if (sortType === 'deadline') items.sort((a,b) => new Date(a.deadline||'2099-01-01') - new Date(b.deadline||'2099-01-01'));
+                
+                listBody.innerHTML = '';
+                if (items.length === 0) { listBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">No items found for this view.</div>'; return; }
+
+                items.forEach(item => {
+                    const statusClass = item.status === 'Purchased' ? 'status-purchased' : 'status-need';
+                    const priorityBadge = item.priority === 'High' ? `<span class="badge priority-high">High</span>` : '';
+                    
+                    const card = document.createElement('div'); 
+                    card.className = 'item-card';
+                    card.innerHTML = `
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title">${item.name} ${priorityBadge}</div>
+                                <div class="item-badges" style="margin-top: 6px;">
+                                    <span class="badge cat">${item.category}</span>
+                                    <span class="badge ${statusClass}">${item.status}</span>
+                                </div>
+                            </div>
+                            <div class="item-price">${Utils.formatBDT(item.price)}</div>
+                        </div>
+                        
+                        <div class="item-meta">
+                            ${item.shop ? `<div class="meta-text"><i data-feather="map-pin"></i> ${item.shop}</div>` : ''}
+                            ${item.deadline ? `<div class="meta-text"><i data-feather="calendar"></i> ${Utils.formatDate(item.deadline)}</div>` : ''}
+                            ${item.link ? `<a href="${item.link}" target="_blank" class="meta-text item-link"><i data-feather="external-link"></i> Link</a>` : ''}
+                            ${item.status === 'Purchased' && item.purchasedMonth ? `<div class="meta-text" style="color: var(--success-color)"><i data-feather="check-circle"></i> Bought in ${item.purchasedMonth}</div>` : ''}
+                        </div>
+
+                        <div class="item-actions">
+                            ${item.status !== 'Purchased' ? `<button class="action-btn btn-buy" data-id="${item.id}"><i data-feather="check"></i> Buy</button>` : ''}
+                            <button class="action-btn btn-edit" data-id="${item.id}"><i data-feather="edit-2"></i> Edit</button>
+                            <button class="action-btn btn-delete" data-id="${item.id}"><i data-feather="trash-2"></i></button>
+                        </div>
+                    `;
+                    listBody.appendChild(card);
+                });
+                feather.replace();
+            }
+
+            static switchView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.getElementById(`${viewId}View`).classList.add('active');
+                document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
+                if(viewId === 'dashboard') UI.renderDashboard();
+                if(viewId === 'items') UI.renderItems();
+            }
+
+            static openModal(item = null) {
+                document.getElementById('itemForm').reset();
+                if (item) {
+                    document.getElementById('modalTitle').innerText = 'Edit Item'; 
+                    document.getElementById('itemId').value = item.id;
+                    document.getElementById('itemName').value = item.name; 
+                    document.getElementById('itemCategory').value = item.category;
+                    document.getElementById('itemPriority').value = item.priority; 
+                    document.getElementById('itemStatus').value = item.status;
+                    document.getElementById('itemPrice').value = item.price; 
+                    document.getElementById('itemShop').value = item.shop || '';
+                    document.getElementById('itemLink').value = item.link || '';
+                    document.getElementById('itemDeadline').value = item.deadline || '';
+                    document.getElementById('itemNotes').value = item.notes || '';
+                } else { 
+                    document.getElementById('modalTitle').innerText = 'Add New Item'; 
+                    document.getElementById('itemId').value = ''; 
+                    document.getElementById('itemStatus').value = 'Need to Buy';
+                }
+                document.getElementById('itemModal').classList.add('active');
+            }
+            static closeModal() { document.getElementById('itemModal').classList.remove('active'); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.init();
+            
+            document.querySelectorAll('.nav-item').forEach(nav => nav.addEventListener('click', (e) => { e.preventDefault(); UI.switchView(nav.getAttribute('data-view')); }));
+            document.getElementById('btnThemeToggle').addEventListener('click', UI.toggleTheme);
+            document.getElementById('btnExport').addEventListener('click', () => { Utils.exportToJSON(db.getData()); UI.showToast('Backup saved!'); });
+            
+            const openModalAction = () => UI.openModal();
+            document.getElementById('btnNewItem').addEventListener('click', openModalAction);
+            document.getElementById('btnFabNewItem').addEventListener('click', openModalAction);
+            document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', UI.closeModal));
+
+            document.getElementById('itemForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                db.saveItem({
+                    id: document.getElementById('itemId').value || null, 
+                    name: document.getElementById('itemName').value,
+                    category: document.getElementById('itemCategory').value, 
+                    priority: document.getElementById('itemPriority').value,
+                    status: document.getElementById('itemStatus').value, 
+                    price: parseFloat(document.getElementById('itemPrice').value) || 0,
+                    shop: document.getElementById('itemShop').value,
+                    link: document.getElementById('itemLink').value,
+                    deadline: document.getElementById('itemDeadline').value,
+                    notes: document.getElementById('itemNotes').value
+                });
+                UI.closeModal(); UI.showToast('Item saved!'); UI.renderItems(); UI.renderDashboard();
+            });
+
+            document.getElementById('itemsList').addEventListener('click', (e) => {
+                const btn = e.target.closest('.action-btn'); if(!btn) return;
+                const id = btn.dataset.id;
+                if (btn.classList.contains('btn-edit')) UI.openModal(db.getItem(id));
+                else if (btn.classList.contains('btn-delete')) { if (confirm('Delete this item?')) { db.deleteItem(id); UI.showToast('Deleted'); UI.renderItems(); UI.renderDashboard(); } }
+                else if (btn.classList.contains('btn-buy')) { 
+                    const item = db.getItem(id); 
+                    item.status = 'Purchased'; 
+                    item.purchasedMonth = Utils.getCurrentMonthStr(); 
+                    db.saveItem(item); 
+                    UI.showToast('Marked Purchased!'); 
+                    UI.renderItems(); 
+                    UI.renderDashboard(); 
+                }
+            });
+
+            ['searchInput', 'filterCategory', 'filterStatus', 'sortItems'].forEach(id => document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', UI.renderItems));
+            document.getElementById('expenseMonth').addEventListener('change', UI.renderDashboard);
+        });
+    </script>
+</body>
+</html>
