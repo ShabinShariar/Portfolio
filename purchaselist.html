@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Personal Item Manager</title>
-    <!-- App Icon & Favicon -->
-    <link rel="icon" type="image.png" href="image/PIM.png">
-    <link rel="apple-touch-icon" href="image/PIM.png">
+    
+    <!-- App Icon & Favicon (Direct Online Link for Home Screen) -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3514/3514491.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3514/3514491.png">
+    
+    <!-- PWA Settings for Android/iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ItemManager">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="ItemManager">
     <meta name="theme-color" content="#0866ff">
     
     <!-- Feather Icons (Updated Stable CDN) -->
@@ -115,34 +121,17 @@
         .btn-edit { background: var(--bg-color); color: var(--text-primary); }
         .btn-delete { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
 
-        /* --- PERFECT MODAL FIX FOR MOBILE --- */
+        /* PERFECT MODAL FIX FOR MOBILE */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         
-        .modal { 
-            width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; 
-            border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; 
-            max-height: 80vh; /* Reduced slightly to ensure keyboard space */
-            display: flex; flex-direction: column; 
-        }
+        .modal { width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; max-height: 80vh; display: flex; flex-direction: column; }
         .modal-overlay.active .modal { transform: translateY(0); }
         
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
         
-        #itemForm { 
-            display: flex; 
-            flex-direction: column; 
-            flex: 1; 
-            min-height: 0; /* Magic fix for nested flexbox scrolling */
-        }
-        
-        .scrollable-form { 
-            overflow-y: auto; 
-            flex: 1; 
-            min-height: 0; /* Magic fix for nested flexbox scrolling */
-            padding-right: 5px; 
-            margin-bottom: 10px; 
-        }
+        #itemForm { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .scrollable-form { overflow-y: auto; flex: 1; min-height: 0; padding-right: 5px; margin-bottom: 10px; }
         
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .span-2 { grid-column: span 1; }
@@ -150,20 +139,18 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 14px; outline: none; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); }
         
-        /* Actions perfectly fixed at bottom */
-        .modal-actions { 
-            display: flex; justify-content: flex-end; gap: 10px; 
-            padding-top: 15px; border-top: 1px solid var(--border-color); 
-            flex-shrink: 0; background: var(--surface-color);
-        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); flex-shrink: 0; background: var(--surface-color); }
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: var(--text-primary); color: var(--bg-color); padding: 12px 20px; border-radius: 30px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); animation: dropDown 0.3s ease; }
         
-        .sync-badge { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; background: var(--bg-color); color: var(--text-secondary); }
+        .sync-badge { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; background: var(--bg-color); color: var(--text-secondary); transition: 0.3s; }
         .sync-badge.syncing { color: var(--warning-color); }
         .sync-badge.synced { color: var(--success-color); }
+        .sync-badge.error { color: var(--danger-color); background: rgba(228, 30, 63, 0.1); }
 
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
         @keyframes dropDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         @media (min-width: 769px) {
@@ -276,14 +263,14 @@
         <button class="fab" id="btnFabNewItem"><i data-feather="plus"></i></button>
     </div>
 
-    <!-- Modal Form (Fixed Layout) -->
+    <!-- Modal Form -->
     <div class="modal-overlay" id="itemModal">
         <div class="modal">
             <div class="modal-header">
                 <h2 id="modalTitle" style="font-size: 1.2rem;">Add New Item</h2>
                 <button class="icon-btn close-modal" type="button"><i data-feather="x"></i></button>
             </div>
-            <!-- Removed inline styles from form, handled in CSS -->
+            
             <form id="itemForm">
                 <input type="hidden" id="itemId">
                 
@@ -335,7 +322,6 @@
                     </div>
                 </div>
                 
-                <!-- Fixed Actions at bottom -->
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary close-modal" style="flex: 1;">Cancel</button>
                     <button type="submit" class="btn btn-primary" style="flex: 2;">Save Item</button>
@@ -370,8 +356,9 @@
             constructor() {
                 this.DB_KEY = 'PIM_Data_BD';
                 this.SETTINGS_KEY = 'PIM_Settings_BD';
-                // Your Google Apps Script Web App URL
-                this.GAS_URL = 'https://script.google.com/macros/s/AKfycbxmJZtbfcXa9bTSqBQcW1psMDQT3R19zYDQjxGxlOXZEMDD_k_Ar_qaT8jGT_4BXA-x/exec';
+                
+                // Your NEW Google Apps Script Web App URL
+                this.GAS_URL = 'https://script.google.com/macros/s/AKfycbzDeg_kgowW59qJmh0AtzKw-vJOu_UdPcRk4JYYhj-ANMgL3MMCoAHs7_kgPX1aOLiq/exec';
                 
                 this.initializeDB();
                 this.syncFromCloud(); // Try fetching initial DB from cloud
@@ -453,6 +440,9 @@
                 } else if(status === 'synced') {
                     el.className = 'sync-badge synced';
                     el.innerHTML = '<i data-feather="check-cloud" style="width:14px;"></i> Cloud Synced';
+                } else if(status === 'error') {
+                    el.className = 'sync-badge error';
+                    el.innerHTML = '<i data-feather="alert-circle" style="width:14px;"></i> Sync Error';
                 } else {
                     el.className = 'sync-badge';
                     el.innerHTML = '<i data-feather="cloud-off" style="width:14px;"></i> Local Mode';
@@ -463,13 +453,18 @@
             async syncToCloud(data) {
                 this.updateSyncUI('syncing');
                 try {
-                    // Send as text/plain to bypass CORS Preflight issues in GAS
+                    // Using no-cors mode to bypass strict Google Redirect policies on POST requests
                     await fetch(this.GAS_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'save', payload: data }),
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                        mode: 'no-cors', // This prevents the fetch from hanging due to CORS
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'save', payload: data })
                     });
+                    
+                    // Since 'no-cors' doesn't return a readable response, we assume success if no JS error is thrown
                     this.updateSyncUI('synced');
+                    setTimeout(() => this.updateSyncUI('local'), 4000); // Return to default after 4 sec
+                    
                 } catch (error) {
                     console.error("Cloud Sync Failed", error);
                     this.updateSyncUI('error');
@@ -487,6 +482,9 @@
                         UI.renderDashboard();
                         UI.renderItems();
                         this.updateSyncUI('synced');
+                        setTimeout(() => this.updateSyncUI('local'), 4000);
+                    } else {
+                        this.updateSyncUI('error');
                     }
                 } catch (error) {
                     console.error("Cloud Load Failed", error);
