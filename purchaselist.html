@@ -9,10 +9,10 @@
     <link rel="apple-touch-icon" href="image/PIM.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ItemManager">
     <meta name="theme-color" content="#0866ff">
-    <!-- Feather Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <!-- Feather Icons (Updated Stable CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     
     <style>
         :root {
@@ -72,7 +72,7 @@
         .view { display: none; animation: fadeIn 0.3s ease; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .stat-card { padding: 1.2rem; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); }
@@ -115,24 +115,38 @@
         .btn-edit { background: var(--bg-color); color: var(--text-primary); }
         .btn-delete { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
 
+        /* MODAL FIX: Make form scrollable inside, keep buttons fixed */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal { width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; max-height: 90vh; overflow-y: auto; }
+        
+        .modal { width: 100%; max-width: 600px; background: var(--surface-color); padding: 1.5rem; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
         .modal-overlay.active .modal { transform: translateY(0); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
+        
+        /* New scrollable area for form */
+        .scrollable-form { overflow-y: auto; flex-grow: 1; padding-right: 5px; margin-bottom: 10px; }
+        
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .span-2 { grid-column: span 1; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 14px; outline: none; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+        
+        /* Actions fixed at bottom */
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); flex-shrink: 0; }
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: var(--text-primary); color: var(--bg-color); padding: 12px 20px; border-radius: 30px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); animation: dropDown 0.3s ease; }
+        
+        .sync-badge { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; background: var(--bg-color); color: var(--text-secondary); }
+        .sync-badge.syncing { color: var(--warning-color); }
+        .sync-badge.synced { color: var(--success-color); }
+
         @keyframes dropDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         @media (min-width: 769px) {
-            .modal { border-radius: var(--radius-lg); transform: scale(0.9); align-self: center; }
+            .modal { border-radius: var(--radius-lg); transform: scale(0.9); align-self: center; height: auto; max-height: 85vh;}
             .modal-overlay.active .modal { transform: scale(1); }
             .span-2 { grid-column: span 2; }
             .fab { display: none; }
@@ -151,7 +165,7 @@
             .nav-item i { width: 20px; height: 20px; }
             .main-content { padding-bottom: 80px; }
             .fab { display: flex; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } /* 2x2 grid on mobile */
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } 
             .stat-card { padding: 1rem; }
             .stat-value { font-size: 1.3rem; }
         }
@@ -180,7 +194,7 @@
                 </div>
                 <div class="topbar-actions">
                     <button class="icon-btn" id="btnThemeToggle"><i data-feather="moon"></i></button>
-                    <button class="icon-btn" id="btnExport"><i data-feather="download"></i></button>
+                    <button class="icon-btn" id="btnExport" title="Backup"><i data-feather="download"></i></button>
                 </div>
             </header>
 
@@ -188,7 +202,10 @@
                 
                 <!-- Dashboard View -->
                 <section id="dashboardView" class="view active">
-                    <h1 class="page-title">Overview</h1>
+                    <h1 class="page-title">
+                        Overview 
+                        <span id="syncStatus" class="sync-badge"><i data-feather="cloud" style="width:14px;"></i> Local Mode</span>
+                    </h1>
                     
                     <div class="stats-grid" id="dashboardStats">
                         <!-- Stats Injected via JS -->
@@ -238,60 +255,66 @@
         <button class="fab" id="btnFabNewItem"><i data-feather="plus"></i></button>
     </div>
 
-    <!-- Modal Form -->
+    <!-- Modal Form (Fixed Layout) -->
     <div class="modal-overlay" id="itemModal">
         <div class="modal">
             <div class="modal-header">
                 <h2 id="modalTitle" style="font-size: 1.2rem;">Add New Item</h2>
                 <button class="icon-btn close-modal" type="button"><i data-feather="x"></i></button>
             </div>
-            <form id="itemForm">
+            <!-- Form body is set to flex for scrollable content -->
+            <form id="itemForm" style="display: flex; flex-direction: column; overflow: hidden; flex-grow: 1;">
                 <input type="hidden" id="itemId">
-                <div class="form-grid">
-                    <div class="form-group span-2">
-                        <label>Item Name *</label>
-                        <input type="text" id="itemName" required placeholder="e.g. Engine Oil">
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select id="itemCategory"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="itemStatus">
-                            <option value="Need to Buy">Need to Buy</option>
-                            <option value="Purchased">Purchased</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Estimated Price (৳)</label>
-                        <input type="number" id="itemPrice" min="0" step="1" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Priority</label>
-                        <select id="itemPriority">
-                            <option value="High">High</option>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Shop / Location</label>
-                        <input type="text" id="itemShop" placeholder="e.g. Bashundhara City">
-                    </div>
-                    <div class="form-group">
-                        <label>Deadline (Date)</label>
-                        <input type="date" id="itemDeadline">
-                    </div>
-                    <div class="form-group span-2">
-                        <label>Product Link (URL)</label>
-                        <input type="url" id="itemLink" placeholder="https://daraz.com.bd/...">
-                    </div>
-                    <div class="form-group span-2">
-                        <label>Notes</label>
-                        <textarea id="itemNotes" rows="2" placeholder="Any extra details..."></textarea>
+                
+                <div class="scrollable-form">
+                    <div class="form-grid">
+                        <div class="form-group span-2">
+                            <label>Item Name *</label>
+                            <input type="text" id="itemName" required placeholder="e.g. Engine Oil">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="itemCategory"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="itemStatus">
+                                <option value="Need to Buy">Need to Buy</option>
+                                <option value="Purchased">Purchased</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estimated Price (৳)</label>
+                            <input type="number" id="itemPrice" min="0" step="1" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Priority</label>
+                            <select id="itemPriority">
+                                <option value="High">High</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Shop / Location</label>
+                            <input type="text" id="itemShop" placeholder="e.g. Bashundhara City">
+                        </div>
+                        <div class="form-group">
+                            <label>Deadline (Date)</label>
+                            <input type="date" id="itemDeadline">
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Product Link (URL)</label>
+                            <input type="url" id="itemLink" placeholder="https://daraz.com.bd/...">
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Notes</label>
+                            <textarea id="itemNotes" rows="2" placeholder="Any extra details..."></textarea>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- Fixed Actions at bottom -->
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary close-modal" style="flex: 1;">Cancel</button>
                     <button type="submit" class="btn btn-primary" style="flex: 2;">Save Item</button>
@@ -326,8 +349,13 @@
             constructor() {
                 this.DB_KEY = 'PIM_Data_BD';
                 this.SETTINGS_KEY = 'PIM_Settings_BD';
+                // Your Google Apps Script Web App URL
+                this.GAS_URL = 'https://script.google.com/macros/s/AKfycbwBorhoelTim29DtyZ6TiKIKyJmVs1Msh4-ox8EwUNssWnfmsYXqgh6nUKkLRhj8cNY/exec';
+                
                 this.initializeDB();
+                this.syncFromCloud(); // Try fetching initial DB from cloud
             }
+            
             initializeDB() {
                 if (!localStorage.getItem(this.DB_KEY)) {
                     localStorage.setItem(this.DB_KEY, JSON.stringify({
@@ -340,13 +368,20 @@
                     localStorage.setItem(this.SETTINGS_KEY, JSON.stringify({ theme: 'light', hideTotalSpent: false }));
                 }
             }
+            
             getData() { return JSON.parse(localStorage.getItem(this.DB_KEY)); }
-            saveData(data) { localStorage.setItem(this.DB_KEY, JSON.stringify(data)); }
+            
+            saveData(data) { 
+                localStorage.setItem(this.DB_KEY, JSON.stringify(data)); 
+                this.syncToCloud(data); // Sync to Google Sheet on save
+            }
+            
             getSettings() { return JSON.parse(localStorage.getItem(this.SETTINGS_KEY)); }
             saveSettings(settings) { localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings)); }
             
             getItems() { return this.getData().items || []; }
             getItem(id) { return this.getItems().find(i => i.id === id); }
+            
             saveItem(itemData) {
                 const data = this.getData();
                 const index = data.items.findIndex(i => i.id === itemData.id);
@@ -361,11 +396,13 @@
                 else { itemData.id = Utils.generateId(); itemData.created = new Date().getTime(); data.items.unshift(itemData); }
                 this.saveData(data);
             }
+            
             deleteItem(id) {
                 const data = this.getData();
                 data.items = data.items.filter(i => i.id !== id);
                 this.saveData(data);
             }
+            
             getCategories() { return this.getData().categories; }
             
             getStats(targetMonth) {
@@ -384,7 +421,59 @@
                     budget: this.getData().budget
                 };
             }
+
+            // Cloud Sync Methods
+            updateSyncUI(status) {
+                const el = document.getElementById('syncStatus');
+                if(!el) return;
+                if(status === 'syncing') {
+                    el.className = 'sync-badge syncing';
+                    el.innerHTML = '<i data-feather="refresh-cw" style="width:14px;" class="spin"></i> Syncing...';
+                } else if(status === 'synced') {
+                    el.className = 'sync-badge synced';
+                    el.innerHTML = '<i data-feather="check-cloud" style="width:14px;"></i> Cloud Synced';
+                } else {
+                    el.className = 'sync-badge';
+                    el.innerHTML = '<i data-feather="cloud-off" style="width:14px;"></i> Local Mode';
+                }
+                feather.replace();
+            }
+
+            async syncToCloud(data) {
+                this.updateSyncUI('syncing');
+                try {
+                    // Send as text/plain to bypass CORS Preflight issues in GAS
+                    await fetch(this.GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'save', payload: data }),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+                    this.updateSyncUI('synced');
+                } catch (error) {
+                    console.error("Cloud Sync Failed", error);
+                    this.updateSyncUI('error');
+                }
+            }
+
+            async syncFromCloud() {
+                this.updateSyncUI('syncing');
+                try {
+                    const response = await fetch(this.GAS_URL + "?action=get");
+                    const cloudData = await response.json();
+                    
+                    if(cloudData && cloudData.items && cloudData.items.length >= 0) {
+                        localStorage.setItem(this.DB_KEY, JSON.stringify(cloudData));
+                        UI.renderDashboard();
+                        UI.renderItems();
+                        this.updateSyncUI('synced');
+                    }
+                } catch (error) {
+                    console.error("Cloud Load Failed", error);
+                    this.updateSyncUI('error');
+                }
+            }
         }
+        
         const db = new StorageManager();
 
         class UI {
@@ -452,7 +541,6 @@
                     </div>
                 `;
 
-                // Eye Toggle Event
                 document.getElementById('toggleEyeBtn').addEventListener('click', () => {
                     settings.hideTotalSpent = !settings.hideTotalSpent;
                     db.saveSettings(settings);
