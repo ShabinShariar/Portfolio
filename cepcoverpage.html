@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DIU Cover Page Editor</title>
-    <!-- html2pdf Library for Perfect A4 PDF Download -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Base layout */
+        /* ========================================= */
+        /* GENERAL UI STYLES (Screen View)           */
+        /* ========================================= */
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #525659; 
+            background-color: #525659; /* Standard PDF viewer background */
             margin: 0;
             display: flex;
             height: 100vh;
@@ -20,44 +20,57 @@
         /* Sidebar Control Panel */
         .sidebar {
             width: 320px;
-            background: #f4f4f4;
+            background: #f8f9fa;
             padding: 20px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
             overflow-y: auto;
             z-index: 10;
             font-family: Arial, sans-serif;
         }
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-        .form-group input { width: 100%; padding: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-        .download-btn {
-            width: 100%; padding: 12px; background: #28a745; color: white; border: none;
-            cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 16px; border-radius: 4px;
+        .sidebar-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
         }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #444; }
+        .form-group input { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; 
+            border-radius: 4px; box-sizing: border-box; font-size: 14px;
+        }
+        .print-btn {
+            width: 100%; padding: 12px; background: #007bff; color: white; border: none;
+            cursor: pointer; margin-top: 20px; font-weight: bold; font-size: 16px; border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .print-btn:hover { background: #0056b3; }
 
         /* Preview Area */
         .preview-area {
             flex-grow: 1;
-            padding: 20px;
+            padding: 30px;
             overflow-y: auto;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
         }
 
-        /* EXACT A4 PAGE STYLING (The part that becomes PDF) */
+        /* ========================================= */
+        /* EXACT A4 PAGE DESIGN (Screen & Print)     */
+        /* ========================================= */
         .a4-page {
             width: 210mm;
-            height: 297mm;
+            height: 297mm; /* Strict A4 Height */
             background: white;
             box-sizing: border-box;
-            padding: 35mm 25mm; /* EXACT margins to match your image */
+            padding: 35mm 25mm; /* EXACT margins to match your provided image */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
             color: black;
-        }
-
-        /* Wrap for PDF Generation */
-        #pdf-content {
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            position: relative;
         }
 
         /* Header & Logo */
@@ -66,13 +79,18 @@
         .doc-title { font-size: 16px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
 
         /* Course Info */
-        .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         
-        /* Table Styles (Exact Match) */
-        table.eval-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; margin-bottom: 25px; }
-        table.eval-table th, table.eval-table td { border: 1px solid black; padding: 4px; }
+        /* Table Styles (Exact Xerox Match) */
+        table.eval-table { 
+            width: 100%; border-collapse: collapse; text-align: center; 
+            font-size: 13px; margin-bottom: 25px; table-layout: fixed;
+        }
+        table.eval-table th, table.eval-table td { 
+            border: 1px solid black; padding: 4px; 
+        }
         table.eval-table th { font-weight: bold; }
-        .text-left { text-align: left !important; padding-left: 5px !important; }
+        .text-left { text-align: left !important; padding-left: 8px !important; }
         
         .vertical-text {
             writing-mode: vertical-rl;
@@ -83,18 +101,60 @@
         }
 
         /* Term Info */
-        .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 30px; }
+        .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 35px; }
 
         /* Submission Section */
         table.submission-table { width: 100%; border: none; font-size: 15px; }
         table.submission-table td { border: none; padding: 5px 0; vertical-align: top; }
-        .sub-label { width: 100px; font-style: italic; font-weight: bold; }
+        .sub-label { width: 110px; font-style: italic; font-weight: bold; }
+
+        /* ========================================= */
+        /* PERFECT PRINT SETTINGS (The Magic Part)   */
+        /* ========================================= */
+        @page {
+            size: A4 portrait;
+            margin: 0; /* Removes browser default headers/footers (dates, URLs) */
+        }
+
+        @media print {
+            body { 
+                background: white !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                -webkit-print-color-adjust: exact !important; /* Forces borders and graphics to print */
+                print-color-adjust: exact !important;
+            }
+            /* Hide the sidebar completely */
+            .sidebar { display: none !important; }
+            
+            /* Remove all paddings from the preview area so it fits exactly */
+            .preview-area { 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                display: block !important; 
+            }
+            
+            /* The actual A4 page settings for the print dialog */
+            .a4-page { 
+                box-shadow: none !important; /* Remove shadow in print */
+                margin: 0 !important; 
+                width: 210mm !important; 
+                height: 297mm !important; /* Forces exact A4 length */
+                max-height: 297mm !important;
+                padding: 35mm 25mm !important; /* Keeps the margins intact */
+                page-break-after: avoid !important; /* Prevents an extra blank page */
+                page-break-before: avoid !important;
+                overflow: hidden !important; /* Ensures no content spills over to create a new page */
+            }
+        }
     </style>
 </head>
 <body>
 
     <!-- Editor Sidebar -->
     <div class="sidebar">
+        <div class="sidebar-title">Cover Page Editor</div>
+        
         <div class="form-group">
             <label>Cover Type</label>
             <input type="text" id="in-docType" value="ASSIGNMENT" oninput="updateView()">
@@ -139,95 +199,94 @@
             <label>Teacher's Designation</label>
             <input type="text" id="in-teacherDesig" value="Lecturer, Dept. of TE, DIU" oninput="updateView()">
         </div>
-        <button class="download-btn" onclick="generatePDF()">Download Perfect PDF</button>
+        
+        <!-- Standard Print Button to open Browser Print Dialog -->
+        <button class="print-btn" onclick="window.print()">Print / Download PDF</button>
     </div>
 
     <!-- Live Preview Area -->
     <div class="preview-area">
-        <!-- This exact div will be converted to PDF -->
-        <div id="pdf-content">
-            <div class="a4-page">
-                
-                <!-- Header -->
-                <div class="header-section">
-                    <!-- Updated Logo Path -->
-                    <img src="image/diucepcover.png" alt="DIU Logo" class="logo-img">
-                    <div class="doc-title" id="out-docType">ASSIGNMENT</div>
-                </div>
-
-                <!-- Course Info -->
-                <div class="course-info">
-                    <div>Course Code: <span id="out-courseCode">0723-219</span></div>
-                    <div>Course Title: <span id="out-courseTitle">Apparel Manufacturing 1</span></div>
-                </div>
-
-                <!-- Evaluation Table -->
-                <table class="eval-table">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width: 5%;">No.</th>
-                            <th rowspan="2" style="width: 40%;">Evaluation Criteria with Marks</th>
-                            <th colspan="5">Put Tick (&check;) Mark</th>
-                            <th rowspan="2" style="width: 8%;"><div class="vertical-text" style="height: 100px;">Marks Obtained</div></th>
-                            <th rowspan="2" style="width: 15%;">Remarks</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 6%;"><div class="vertical-text">Excellent (100%)</div></th>
-                            <th style="width: 6%;"><div class="vertical-text">Very Good (80%)</div></th>
-                            <th style="width: 6%;"><div class="vertical-text">Good (60%)</div></th>
-                            <th style="width: 6%;"><div class="vertical-text">Fair (40%)</div></th>
-                            <th style="width: 6%;"><div class="vertical-text">Poor (20%)</div></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>1</td><td class="text-left">Problem Definition and Analysis</td><td></td><td></td><td></td><td></td><td></td><td></td><td rowspan="5"></td></tr>
-                        <tr><td>2</td><td class="text-left">Solution Development and Design</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr><td>3</td><td class="text-left">Communication and Presentation</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr><td>4</td><td class="text-left">Depth of Knowledge & Understanding</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr><td>5</td><td class="text-left">Reflection and Learning</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr>
-                            <td colspan="2" style="font-weight: bold; height: 30px;">TOTAL</td>
-                            <td></td><td></td><td></td><td></td><td></td><td></td>
-                            <td style="vertical-align: bottom; padding-bottom: 2px;">
-                                <hr style="border: 0; border-top: 1px solid black; width: 80%; margin: 0 auto 2px auto;">
-                                Signature
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- Term Info -->
-                <div class="term-info">
-                    <div>Semester: <span id="out-semester">Summer</span></div>
-                    <div>Year: <span id="out-year">2026</span></div>
-                    <div>Level-Term: <span id="out-levelTerm">L2T2</span></div>
-                    <div>Section: <span id="out-section">G1</span></div>
-                </div>
-
-                <!-- Submission Section -->
-                <table class="submission-table">
-                    <tr>
-                        <td class="sub-label">Submitted by:</td>
-                        <td>
-                            <b><span id="out-studentName">Shabin Shariar</span></b><br>
-                            <i><span id="out-studentID">251-23-06</span></i>
-                        </td>
-                    </tr>
-                    <tr><td colspan="2" style="height: 10px;"></td></tr>
-                    <tr>
-                        <td class="sub-label">Submitted to:</td>
-                        <td>
-                            <b><span id="out-teacherName">Ms. Rakeya Jannat</span></b><br>
-                            <i><span id="out-teacherDesig">Lecturer, Dept. of TE, DIU</span></i>
-                        </td>
-                    </tr>
-                </table>
-
+        <div class="a4-page">
+            
+            <!-- Header -->
+            <div class="header-section">
+                <!-- Configured for your GitHub structure -->
+                <img src="image/diucepcover.png" alt="DIU Logo" class="logo-img">
+                <div class="doc-title" id="out-docType">ASSIGNMENT</div>
             </div>
+
+            <!-- Course Info -->
+            <div class="course-info">
+                <div>Course Code: <span id="out-courseCode">0723-219</span></div>
+                <div>Course Title: <span id="out-courseTitle">Apparel Manufacturing 1</span></div>
+            </div>
+
+            <!-- Evaluation Table -->
+            <table class="eval-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 6%;">No.</th>
+                        <th rowspan="2" style="width: 40%;">Evaluation Criteria with Marks</th>
+                        <th colspan="5">Put Tick (&check;) Mark</th>
+                        <th rowspan="2" style="width: 9%;"><div class="vertical-text" style="height: 100px;">Marks Obtained</div></th>
+                        <th rowspan="2" style="width: 15%;">Remarks</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 6%;"><div class="vertical-text">Excellent (100%)</div></th>
+                        <th style="width: 6%;"><div class="vertical-text">Very Good (80%)</div></th>
+                        <th style="width: 6%;"><div class="vertical-text">Good (60%)</div></th>
+                        <th style="width: 6%;"><div class="vertical-text">Fair (40%)</div></th>
+                        <th style="width: 6%;"><div class="vertical-text">Poor (20%)</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td class="text-left">Problem Definition and Analysis</td><td></td><td></td><td></td><td></td><td></td><td></td><td rowspan="5"></td></tr>
+                    <tr><td>2</td><td class="text-left">Solution Development and Design</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>3</td><td class="text-left">Communication and Presentation</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>4</td><td class="text-left">Depth of Knowledge & Understanding</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>5</td><td class="text-left">Reflection and Learning</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr>
+                        <td colspan="2" style="font-weight: bold; height: 35px;">TOTAL</td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td style="vertical-align: bottom; padding-bottom: 3px;">
+                            <hr style="border: 0; border-top: 1px solid black; width: 80%; margin: 0 auto 2px auto;">
+                            Signature
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Term Info -->
+            <div class="term-info">
+                <div>Semester: <span id="out-semester">Summer</span></div>
+                <div>Year: <span id="out-year">2026</span></div>
+                <div>Level-Term: <span id="out-levelTerm">L2T2</span></div>
+                <div>Section: <span id="out-section">G1</span></div>
+            </div>
+
+            <!-- Submission Section -->
+            <table class="submission-table">
+                <tr>
+                    <td class="sub-label">Submitted by:</td>
+                    <td>
+                        <b><span id="out-studentName">Shabin Shariar</span></b><br>
+                        <i><span id="out-studentID">251-23-06</span></i>
+                    </td>
+                </tr>
+                <tr><td colspan="2" style="height: 12px;"></td></tr>
+                <tr>
+                    <td class="sub-label">Submitted to:</td>
+                    <td>
+                        <b><span id="out-teacherName">Ms. Rakeya Jannat</span></b><br>
+                        <i><span id="out-teacherDesig">Lecturer, Dept. of TE, DIU</span></i>
+                    </td>
+                </tr>
+            </table>
+
         </div>
     </div>
 
-    <!-- JavaScript -->
+    <!-- JavaScript to handle live updates -->
     <script>
         function updateView() {
             const fields = [
@@ -237,28 +296,8 @@
             ];
             
             fields.forEach(field => {
-                document.getElementById('out-' + field).innerText = document.getElementById('in-' + field).value;
-            });
-        }
-
-        // PDF Generation Function
-        function generatePDF() {
-            const element = document.getElementById('pdf-content');
-            
-            // Remove the shadow temporarily for a clean print
-            element.style.boxShadow = 'none';
-
-            const opt = {
-                margin:       0,
-                filename:     'Cover_Page.pdf',
-                image:        { type: 'jpeg', quality: 1 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Restore shadow after download
-                element.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+                const inputVal = document.getElementById('in-' + field).value;
+                document.getElementById('out-' + field).innerText = inputVal;
             });
         }
     </script>
