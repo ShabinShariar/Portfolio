@@ -129,47 +129,52 @@
         .btn-delete { background: rgba(228, 30, 63, 0.1); color: var(--danger-color); }
 
         /* ========================================================
-           PERFECT MODAL FIX FOR MOBILE (সলভ করা হয়েছে)
+           PERFECT MODAL FIX (Transform & Backdrop-Filter সরানো হয়েছে)
            ======================================================== */
-        /* ব্যাকগ্রাউন্ড ওভারলে */
+        
+        /* ১. ব্যাকগ্রাউন্ড ওভারলে: backdrop-filter সরানো হয়েছে যেন কনফ্লিক্ট না করে */
         .modal-overlay { 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; /* 100dvh দিলে মোবাইলের এড্রেস বারের কারণে স্ক্রিন কাটবে না */
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
+            background: rgba(0,0,0,0.7); 
             display: flex; justify-content: center; align-items: flex-end; 
-            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; 
+            opacity: 0; pointer-events: none; transition: 0.3s ease-in-out; z-index: 100; 
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         
-        /* মূল মডাল বক্স */
+        /* ২. মূল মডাল: transform এর বদলে position: relative এবং bottom দিয়ে অ্যানিমেশন */
         .modal { 
             width: 100%; max-width: 600px; 
             background: var(--surface-color); padding: 1.5rem; 
-            border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; 
-            max-height: 85dvh; /* মডালটি স্ক্রিনের ৮৫% এর বেশি বড় হবে না */
-            display: flex; flex-direction: column; /* ফ্লেক্স ব্যবহারের ফলে ভেতরের অংশ রেসপনসিভ হবে */
+            border-radius: 20px 20px 0 0; 
+            position: relative;
+            bottom: -100vh; /* স্ক্রিনের নিচে লুকিয়ে থাকবে */
+            transition: bottom 0.3s ease-in-out; 
+            max-height: 85dvh; display: flex; flex-direction: column; 
         }
-        .modal-overlay.active .modal { transform: translateY(0); }
+        
+        /* মডাল ওপেন হলে নিচ থেকে উপরে আসবে */
+        .modal-overlay.active .modal { bottom: 0; }
         
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
         
-        /* ফর্ম কন্টেইনার - এটি মডালের বাকি জায়গা দখল করবে কিন্তু বাইরে যাবে না */
+        /* ৩. ফর্ম কন্টেইনার: flex: 1 দিয়ে স্ক্রলিং এরিয়া তৈরি করা হয়েছে */
         #itemForm { 
             display: flex; flex-direction: column; 
-            flex: 1; min-height: 0; overflow: hidden; /* ফর্মটি মডালের বাইরে চলে যাওয়া বন্ধ করে */
+            flex: 1; min-height: 0; overflow: hidden; 
         }
         
-        /* এই অংশটি স্ক্রল হবে - ফলে স্ক্রিন জাম্প করবে না এবং ড্রপডাউন কাজ করবে */
+        /* ৪. এই অংশটি স্ক্রল হবে, যার ফলে Save বাটন নিচে ফিক্সড থাকবে */
         .scrollable-form { 
             overflow-y: auto; flex: 1; 
             padding-right: 5px; margin-bottom: 10px; 
-            -webkit-overflow-scrolling: touch; /* আইফোনের জন্য স্মুথ স্ক্রল */
+            -webkit-overflow-scrolling: touch; /* আইফোনে স্মুথ স্ক্রলিং */
         }
         
-        /* সেভ বাটন অংশ - এটি সবসময় নিচে ফিক্সড থাকবে */
+        /* ৫. সেভ বাটন অংশ: এটি সবসময় নিচে ফিক্সড থাকবে */
         .modal-actions { 
             display: flex; justify-content: flex-end; gap: 10px; 
             padding-top: 15px; border-top: 1px solid var(--border-color); 
-            flex-shrink: 0; /* স্ক্রল করলেও এটি ছোট বা গায়েব হবে না */
+            flex-shrink: 0; 
             background: var(--surface-color); 
         }
         /* ======================================================== */
@@ -194,8 +199,14 @@
 
         /* ডেস্কটপ ও ট্যাবলেট ভিউ */
         @media (min-width: 769px) {
-            .modal { border-radius: var(--radius-lg); transform: scale(0.9); align-self: center; height: auto; }
-            .modal-overlay.active .modal { transform: scale(1); }
+            .modal-overlay { align-items: center; } /* ডেস্কটপে মডাল সেন্টারে থাকবে */
+            .modal { 
+                border-radius: var(--radius-lg); 
+                bottom: -50px; opacity: 0; 
+                height: auto; 
+                transition: bottom 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            }
+            .modal-overlay.active .modal { bottom: 0; opacity: 1; }
             .fab { display: none; }
             .item-card { flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px; }
             .item-header { flex-direction: column; width: 30%; }
