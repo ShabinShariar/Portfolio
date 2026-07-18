@@ -140,6 +140,40 @@
                 overflow: hidden !important; 
             }
         }
+        /* ========================================= */
+        /* MOBILE & IPAD RESPONSIVE DESIGN           */
+        /* ========================================= */
+        @media screen and (max-width: 900px) {
+            body {
+                flex-direction: column; /* পাশাপাশি না রেখে উপরে-নিচে দেখাবে */
+                overflow-y: auto; /* পুরো পেজ স্ক্রল করা যাবে */
+                height: auto;
+            }
+            .sidebar {
+                width: 100%; /* সাইডবার পুরো স্ক্রিন জুড়ে থাকবে */
+                box-sizing: border-box;
+                border-bottom: 2px solid #ccc;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            .preview-area {
+                padding: 20px 10px;
+                overflow-x: auto; /* A4 পেজ বড় হলে ডানে-বামে স্ক্রল করা যাবে */
+                justify-content: flex-start;
+            }
+            /* ছোট স্ক্রিনে A4 পেজটিকে একটু জুম-আউট করে দেখানোর জন্য */
+            .a4-page {
+                transform: scale(0.8);
+                transform-origin: top center;
+                margin-bottom: -60mm; /* জুম আউটের কারণে নিচের ফাঁকা জায়গা কমানো */
+            }
+        }
+
+        @media screen and (max-width: 500px) {
+            .a4-page {
+                transform: scale(0.45); /* ফোনের স্ক্রিনের জন্য আরও জুম-আউট */
+                margin-bottom: -150mm;
+            }
+        }
     </style>
 </head>
 <body>
