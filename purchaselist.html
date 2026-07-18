@@ -14,7 +14,7 @@
     <!-- Feather Icons -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     
-    <!-- Flatpickr Date Picker (নেটিভ ক্যালেন্ডার পপআপ বন্ধ করার জন্য) -->
+    <!-- Flatpickr Date Picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     
@@ -94,9 +94,8 @@
         .progress-bar-container { height: 10px; background: var(--bg-color); border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
         .progress-bar { height: 100%; background: var(--primary-color); border-radius: 5px; transition: width 0.5s ease; }
         
-        .filters-container { display: flex; gap: 10px; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 5px; }
-        .filters-container::-webkit-scrollbar { height: 4px; }
-        .filters-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        /* ফিক্স করা হয়েছে: ড্রপডাউন যেন ক্লিপ না হয় তার জন্য overflow সরানো হয়েছে এবং wrap করা হয়েছে */
+        .filters-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
         
         .list-body { display: flex; flex-direction: column; gap: 10px; }
         .item-card { background: var(--surface-color); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; transition: 0.2s; box-shadow: var(--shadow-sm); }
@@ -153,13 +152,10 @@
         .form-group input, .form-group textarea { width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-size: 14px; outline: none; }
         .form-group input:focus, .form-group textarea:focus { border-color: var(--primary-color); }
 
-        /* ========================================================
-           CUSTOM DROPDOWN UI (FOR BOTH MODAL & FILTERS)
-           ======================================================== */
+        /* Custom Dropdown Styles */
         .custom-dropdown { position: relative; width: 100%; }
         
-        /* Filter specific styling */
-        .filter-dropdown { min-width: 150px; }
+        .filter-dropdown { min-width: 150px; flex: 1; }
         .filter-dropdown .dropdown-selected { border-radius: 20px; padding: 8px 12px; font-size: 13px; font-weight: 500; white-space: nowrap; background: var(--surface-color);}
         
         .dropdown-selected { 
@@ -185,7 +181,6 @@
         .dropdown-list li { padding: 10px 16px; cursor: pointer; font-size: 14px; color: var(--text-primary); transition: 0.2s; border-bottom: 1px solid var(--border-color); }
         .dropdown-list li:last-child { border-bottom: none; }
         .dropdown-list li:hover { background: var(--bg-color); color: var(--primary-color); font-weight: 600; }
-        /* ======================================================== */
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: var(--text-primary); color: var(--bg-color); padding: 12px 20px; border-radius: 30px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); animation: dropDown 0.3s ease; }
@@ -283,7 +278,6 @@
                     
                     <div class="filters-container">
                         <!-- Custom Dropdown: Filter Status -->
-                        <input type="hidden" id="filterStatus" value="Need to Buy">
                         <div class="custom-dropdown filter-dropdown" data-target="filterStatus">
                             <div class="dropdown-selected"><span id="filterStatusDisplay">Status: Need to Buy</span> <i data-feather="chevron-down"></i></div>
                             <ul class="dropdown-list">
@@ -291,19 +285,19 @@
                                 <li data-value="Purchased">Status: Purchased</li>
                                 <li data-value="all">Status: All</li>
                             </ul>
+                            <input type="hidden" id="filterStatus" value="Need to Buy">
                         </div>
 
                         <!-- Custom Dropdown: Filter Category -->
-                        <input type="hidden" id="filterCategory" value="all">
                         <div class="custom-dropdown filter-dropdown" data-target="filterCategory">
                             <div class="dropdown-selected"><span id="filterCategoryDisplay">All Categories</span> <i data-feather="chevron-down"></i></div>
                             <ul class="dropdown-list" id="filterCategoryList">
                                 <li data-value="all">All Categories</li>
                             </ul>
+                            <input type="hidden" id="filterCategory" value="all">
                         </div>
 
                         <!-- Custom Dropdown: Sort Items -->
-                        <input type="hidden" id="sortItems" value="newest">
                         <div class="custom-dropdown filter-dropdown" data-target="sortItems">
                             <div class="dropdown-selected"><span id="sortItemsDisplay">Newest First</span> <i data-feather="chevron-down"></i></div>
                             <ul class="dropdown-list">
@@ -311,6 +305,7 @@
                                 <li data-value="priceDesc">Price: High to Low</li>
                                 <li data-value="priceAsc">Price: Low to High</li>
                             </ul>
+                            <input type="hidden" id="sortItems" value="newest">
                         </div>
                     </div>
 
@@ -343,17 +338,16 @@
                         <!-- Custom Dropdown: Category -->
                         <div class="form-group">
                             <label>Category</label>
-                            <input type="hidden" id="itemCategory">
                             <div class="custom-dropdown" data-target="itemCategory">
                                 <div class="dropdown-selected"><span id="itemCategoryDisplay">Select...</span> <i data-feather="chevron-down"></i></div>
                                 <ul class="dropdown-list" id="itemCategoryListForm"></ul>
                             </div>
+                            <input type="hidden" id="itemCategory">
                         </div>
                         
                         <!-- Custom Dropdown: Status -->
                         <div class="form-group">
                             <label>Status</label>
-                            <input type="hidden" id="itemStatus" value="Need to Buy">
                             <div class="custom-dropdown" data-target="itemStatus">
                                 <div class="dropdown-selected"><span id="itemStatusDisplay">Need to Buy</span> <i data-feather="chevron-down"></i></div>
                                 <ul class="dropdown-list">
@@ -361,6 +355,7 @@
                                     <li data-value="Purchased">Purchased</li>
                                 </ul>
                             </div>
+                            <input type="hidden" id="itemStatus" value="Need to Buy">
                         </div>
                         
                         <div class="form-group">
@@ -371,7 +366,6 @@
                         <!-- Custom Dropdown: Priority -->
                         <div class="form-group">
                             <label>Priority</label>
-                            <input type="hidden" id="itemPriority" value="Medium">
                             <div class="custom-dropdown" data-target="itemPriority">
                                 <div class="dropdown-selected"><span id="itemPriorityDisplay">Medium</span> <i data-feather="chevron-down"></i></div>
                                 <ul class="dropdown-list">
@@ -380,6 +374,7 @@
                                     <li data-value="Low">Low</li>
                                 </ul>
                             </div>
+                            <input type="hidden" id="itemPriority" value="Medium">
                         </div>
                         
                         <div class="form-group">
@@ -387,7 +382,6 @@
                             <input type="text" id="itemShop" placeholder="e.g. Bashundhara City">
                         </div>
                         <div class="form-group">
-                            <!-- type="date" এর পরিবর্তে text ব্যবহার করেছি যেন Flatpickr কাজ করে -->
                             <label>Deadline (Date)</label>
                             <input type="text" id="itemDeadline" placeholder="Select Date">
                         </div>
@@ -447,8 +441,8 @@
             }
             
             initializeDB() {
-                // সব ক্যাটাগরি সংযুক্ত করে দেওয়া হলো
-                const defaultCategories = ['Electronics', 'Bike', 'Study Materials', 'University/Lab', 'Gadgets', 'Clothing', 'Home', 'Grocery', 'Health & Fitness', 'Cosmetics', 'Travel', 'Gifts', 'Food & Snacks', 'Bills & Utilities', 'Others'];
+                // ডিফল্ট ক্যাটাগরি সেট করা হয়েছে
+                const defaultCategories = ['Bike', 'Bills & Utilities', 'Clothing', 'Cosmetics', 'Electronics', 'Food & Snacks', 'Gadgets', 'Gifts', 'Grocery', 'Health & Fitness', 'Home', 'Study Materials', 'Travel', 'University/Lab', 'Others'];
                 
                 let dbData = JSON.parse(localStorage.getItem(this.DB_KEY));
                 
@@ -459,7 +453,6 @@
                         budget: 20000 
                     }));
                 } else {
-                    // যদি ইউজারের পুরাতন ডাটা থাকে, তাহলে মিসিং ক্যাটাগরিগুলো অটোমেটিক যোগ করে দেওয়া হবে
                     let changed = false;
                     defaultCategories.forEach(cat => {
                         if (!dbData.categories.includes(cat)) {
@@ -511,7 +504,13 @@
                 this.saveData(data);
             }
             
-            getCategories() { return this.getData().categories; }
+            // ক্যাটাগরিগুলোকে অটোমেটিক A-Z সিরিয়ালে সাজানো এবং 'Others' কে সবার শেষে রাখার লজিক
+            getCategories() { 
+                let cats = this.getData().categories || [];
+                cats = cats.filter(c => c !== 'Others').sort();
+                if ((this.getData().categories || []).includes('Others')) cats.push('Others');
+                return cats;
+            }
             
             getStats(targetMonth) {
                 const items = this.getItems();
@@ -582,18 +581,17 @@
                 UI.loadTheme(); 
                 UI.populateCategories(); 
                 UI.initCustomDropdowns(); 
-                UI.initDatePickers(); // ক্যালেন্ডার ইনিশিয়ালাইজ করা হচ্ছে
+                UI.initDatePickers(); 
                 document.getElementById('expenseMonth').value = Utils.getCurrentMonthStr();
                 UI.renderDashboard(); 
                 UI.renderItems(); 
                 feather.replace(); 
             }
 
-            // Flatpickr Calendar (নেটিভ ক্যালেন্ডার পপআপ বন্ধ করা হয়েছে)
             static initDatePickers() {
                 flatpickr("#itemDeadline", {
                     dateFormat: "Y-m-d",
-                    disableMobile: "true" // এটি মোবাইল ব্রাউজারকে নেটিভ ক্যালেন্ডার ওপেন করতে বাধা দেয়
+                    disableMobile: "true" 
                 });
 
                 flatpickr("#expenseMonth", {
@@ -607,7 +605,6 @@
                 });
             }
 
-            // Custom Dropdowns (যেকোনো সিলেকশনে পপআপ বন্ধ করা হয়েছে)
             static initCustomDropdowns() {
                 document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
                     if (dropdown.dataset.initialized) return;
@@ -634,7 +631,7 @@
                             displaySpan.innerText = e.target.innerText;
                             dropdown.classList.remove('active');
                             
-                            // ফিল্টার পরিবর্তনের সাথে সাথে লিস্ট আপডেট করার জন্য ইভেন্ট ফায়ার করা হলো
+                            // ফিল্টার পরিবর্তন হলে লিস্ট আপডেট করার জন্য ইভেন্ট ফায়ার
                             hiddenInput.dispatchEvent(new Event('change'));
                         }
                     });
@@ -819,7 +816,7 @@
                     document.getElementById('itemCategory').value = firstCat;
                     document.getElementById('itemCategoryDisplay').innerText = firstCat;
                     
-                    document.getElementById('itemDeadline').value = ''; // রিসেট ডেট
+                    document.getElementById('itemDeadline').value = ''; 
                 }
                 document.getElementById('itemModal').classList.add('active');
             }
@@ -870,7 +867,7 @@
                 }
             });
 
-            // কাস্টম ড্রপডাউনের ডাটা পরিবর্তনের সাথে সাথে লিস্ট আপডেট করার জন্য ইভেন্ট লিসেনার
+            // ইভেন্ট লিসেনার ফর ফিল্টারস 
             ['searchInput', 'filterCategory', 'filterStatus', 'sortItems'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
