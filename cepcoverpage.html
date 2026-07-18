@@ -10,14 +10,13 @@
         /* ========================================= */
         body {
             font-family: 'Times New Roman', Times, serif;
-            background-color: #525659; /* Standard PDF viewer background */
+            background-color: #525659;
             margin: 0;
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
         
-        /* Sidebar Control Panel */
         .sidebar {
             width: 320px;
             background: #f8f9fa;
@@ -28,13 +27,8 @@
             font-family: Arial, sans-serif;
         }
         .sidebar-title {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #333;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 10px;
+            text-align: center; font-size: 18px; font-weight: bold;
+            margin-bottom: 20px; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px;
         }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #444; }
@@ -49,7 +43,6 @@
         }
         .print-btn:hover { background: #0056b3; }
 
-        /* Preview Area */
         .preview-area {
             flex-grow: 1;
             padding: 30px;
@@ -60,35 +53,30 @@
         }
 
         /* ========================================= */
-        /* EXACT A4 PAGE DESIGN (Screen & Print)     */
+        /* EXACT A4 PAGE DESIGN                      */
         /* ========================================= */
         .a4-page {
             width: 210mm;
-            height: 297mm; /* Strict A4 Height */
+            height: 297mm; 
             background: white;
             box-sizing: border-box;
-            padding: 35mm 25mm; /* EXACT margins to match your provided image */
+            padding: 35mm 25mm; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.4);
             color: black;
             position: relative;
         }
 
-        /* Header & Logo */
         .header-section { text-align: center; margin-bottom: 20px; }
         .logo-img { max-width: 380px; height: auto; }
         .doc-title { font-size: 16px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
 
-        /* Course Info */
         .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         
-        /* Table Styles (Exact Xerox Match) */
         table.eval-table { 
             width: 100%; border-collapse: collapse; text-align: center; 
             font-size: 13px; margin-bottom: 25px; table-layout: fixed;
         }
-        table.eval-table th, table.eval-table td { 
-            border: 1px solid black; padding: 4px; 
-        }
+        table.eval-table th, table.eval-table td { border: 1px solid black; padding: 4px; }
         table.eval-table th { font-weight: bold; }
         .text-left { text-align: left !important; padding-left: 8px !important; }
         
@@ -100,51 +88,56 @@
             margin: auto;
         }
 
-        /* Term Info */
         .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 35px; }
 
-        /* Submission Section */
         table.submission-table { width: 100%; border: none; font-size: 15px; }
         table.submission-table td { border: none; padding: 5px 0; vertical-align: top; }
         .sub-label { width: 110px; font-style: italic; font-weight: bold; }
 
         /* ========================================= */
-        /* PERFECT PRINT SETTINGS (The Magic Part)   */
+        /* PERFECT PRINT SETTINGS (Scrollbars Fixed) */
         /* ========================================= */
         @page {
             size: A4 portrait;
-            margin: 0; /* Removes browser default headers/footers (dates, URLs) */
+            margin: 0; 
         }
 
         @media print {
-            body { 
+            /* 1. Hide scrollbars completely in print mode */
+            ::-webkit-scrollbar {
+                display: none !important;
+            }
+            
+            html, body { 
                 background: white !important; 
                 margin: 0 !important; 
                 padding: 0 !important; 
-                -webkit-print-color-adjust: exact !important; /* Forces borders and graphics to print */
+                height: auto !important; /* Removes 100vh constraint */
+                overflow: hidden !important; /* Forces scrollbars to disappear */
+                -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important;
             }
-            /* Hide the sidebar completely */
+            
             .sidebar { display: none !important; }
             
-            /* Remove all paddings from the preview area so it fits exactly */
             .preview-area { 
                 padding: 0 !important; 
                 margin: 0 !important; 
                 display: block !important; 
+                overflow: hidden !important; /* Removes preview area scrollbars */
+                height: auto !important;
             }
             
-            /* The actual A4 page settings for the print dialog */
             .a4-page { 
-                box-shadow: none !important; /* Remove shadow in print */
+                box-shadow: none !important; 
                 margin: 0 !important; 
                 width: 210mm !important; 
-                height: 297mm !important; /* Forces exact A4 length */
+                height: 297mm !important; 
                 max-height: 297mm !important;
-                padding: 35mm 25mm !important; /* Keeps the margins intact */
-                page-break-after: avoid !important; /* Prevents an extra blank page */
+                padding: 35mm 25mm !important; 
+                page-break-after: avoid !important; 
                 page-break-before: avoid !important;
-                overflow: hidden !important; /* Ensures no content spills over to create a new page */
+                overflow: hidden !important; 
             }
         }
     </style>
@@ -154,7 +147,6 @@
     <!-- Editor Sidebar -->
     <div class="sidebar">
         <div class="sidebar-title">Cover Page Editor</div>
-        
         <div class="form-group">
             <label>Cover Type</label>
             <input type="text" id="in-docType" value="ASSIGNMENT" oninput="updateView()">
@@ -199,8 +191,6 @@
             <label>Teacher's Designation</label>
             <input type="text" id="in-teacherDesig" value="Lecturer, Dept. of TE, DIU" oninput="updateView()">
         </div>
-        
-        <!-- Standard Print Button to open Browser Print Dialog -->
         <button class="print-btn" onclick="window.print()">Print / Download PDF</button>
     </div>
 
@@ -210,7 +200,6 @@
             
             <!-- Header -->
             <div class="header-section">
-                <!-- Configured for your GitHub structure -->
                 <img src="image/diucepcover.png" alt="DIU Logo" class="logo-img">
                 <div class="doc-title" id="out-docType">ASSIGNMENT</div>
             </div>
@@ -286,7 +275,7 @@
         </div>
     </div>
 
-    <!-- JavaScript to handle live updates -->
+    <!-- JavaScript -->
     <script>
         function updateView() {
             const fields = [
