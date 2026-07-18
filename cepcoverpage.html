@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIU Cover Page Editor</title>
+    <!-- html2pdf Library for Perfect A4 PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Base layout */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #525659; 
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Sidebar Control Panel */
+        .sidebar {
+            width: 320px;
+            background: #f4f4f4;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            z-index: 10;
+            font-family: Arial, sans-serif;
+        }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .download-btn {
+            width: 100%; padding: 12px; background: #28a745; color: white; border: none;
+            cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 16px; border-radius: 4px;
+        }
+
+        /* Preview Area */
+        .preview-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* EXACT A4 PAGE STYLING (The part that becomes PDF) */
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            box-sizing: border-box;
+            padding: 35mm 25mm; /* EXACT margins to match your image */
+            color: black;
+        }
+
+        /* Wrap for PDF Generation */
+        #pdf-content {
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Header & Logo */
+        .header-section { text-align: center; margin-bottom: 20px; }
+        .logo-img { max-width: 380px; height: auto; }
+        .doc-title { font-size: 16px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
+
+        /* Course Info */
+        .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        
+        /* Table Styles (Exact Match) */
+        table.eval-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; margin-bottom: 25px; }
+        table.eval-table th, table.eval-table td { border: 1px solid black; padding: 4px; }
+        table.eval-table th { font-weight: bold; }
+        .text-left { text-align: left !important; padding-left: 5px !important; }
+        
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            height: 110px;
+            margin: auto;
+        }
+
+        /* Term Info */
+        .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 30px; }
+
+        /* Submission Section */
+        table.submission-table { width: 100%; border: none; font-size: 15px; }
+        table.submission-table td { border: none; padding: 5px 0; vertical-align: top; }
+        .sub-label { width: 100px; font-style: italic; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- Editor Sidebar -->
+    <div class="sidebar">
+        <div class="form-group">
+            <label>Cover Type</label>
+            <input type="text" id="in-docType" value="ASSIGNMENT" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="in-courseCode" value="0723-219" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Course Title</label>
+            <input type="text" id="in-courseTitle" value="Apparel Manufacturing 1" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Semester</label>
+            <input type="text" id="in-semester" value="Summer" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Year</label>
+            <input type="text" id="in-year" value="2026" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Level-Term</label>
+            <input type="text" id="in-levelTerm" value="L2T2" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Section</label>
+            <input type="text" id="in-section" value="G1" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" id="in-studentName" value="Shabin Shariar" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Student ID</label>
+            <input type="text" id="in-studentID" value="251-23-06" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Teacher's Name</label>
+            <input type="text" id="in-teacherName" value="Ms. Rakeya Jannat" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Teacher's Designation</label>
+            <input type="text" id="in-teacherDesig" value="Lecturer, Dept. of TE, DIU" oninput="updateView()">
+        </div>
+        <button class="download-btn" onclick="generatePDF()">Download Perfect PDF</button>
+    </div>
+
+    <!-- Live Preview Area -->
+    <div class="preview-area">
+        <!-- This exact div will be converted to PDF -->
+        <div id="pdf-content">
+            <div class="a4-page">
+                
+                <!-- Header -->
+                <div class="header-section">
+                    <!-- Updated Logo Path -->
+                    <img src="image/diucepcover.png" alt="DIU Logo" class="logo-img">
+                    <div class="doc-title" id="out-docType">ASSIGNMENT</div>
+                </div>
+
+                <!-- Course Info -->
+                <div class="course-info">
+                    <div>Course Code: <span id="out-courseCode">0723-219</span></div>
+                    <div>Course Title: <span id="out-courseTitle">Apparel Manufacturing 1</span></div>
+                </div>
+
+                <!-- Evaluation Table -->
+                <table class="eval-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width: 5%;">No.</th>
+                            <th rowspan="2" style="width: 40%;">Evaluation Criteria with Marks</th>
+                            <th colspan="5">Put Tick (&check;) Mark</th>
+                            <th rowspan="2" style="width: 8%;"><div class="vertical-text" style="height: 100px;">Marks Obtained</div></th>
+                            <th rowspan="2" style="width: 15%;">Remarks</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 6%;"><div class="vertical-text">Excellent (100%)</div></th>
+                            <th style="width: 6%;"><div class="vertical-text">Very Good (80%)</div></th>
+                            <th style="width: 6%;"><div class="vertical-text">Good (60%)</div></th>
+                            <th style="width: 6%;"><div class="vertical-text">Fair (40%)</div></th>
+                            <th style="width: 6%;"><div class="vertical-text">Poor (20%)</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td class="text-left">Problem Definition and Analysis</td><td></td><td></td><td></td><td></td><td></td><td></td><td rowspan="5"></td></tr>
+                        <tr><td>2</td><td class="text-left">Solution Development and Design</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr><td>3</td><td class="text-left">Communication and Presentation</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr><td>4</td><td class="text-left">Depth of Knowledge & Understanding</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr><td>5</td><td class="text-left">Reflection and Learning</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr>
+                            <td colspan="2" style="font-weight: bold; height: 30px;">TOTAL</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td>
+                            <td style="vertical-align: bottom; padding-bottom: 2px;">
+                                <hr style="border: 0; border-top: 1px solid black; width: 80%; margin: 0 auto 2px auto;">
+                                Signature
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Term Info -->
+                <div class="term-info">
+                    <div>Semester: <span id="out-semester">Summer</span></div>
+                    <div>Year: <span id="out-year">2026</span></div>
+                    <div>Level-Term: <span id="out-levelTerm">L2T2</span></div>
+                    <div>Section: <span id="out-section">G1</span></div>
+                </div>
+
+                <!-- Submission Section -->
+                <table class="submission-table">
+                    <tr>
+                        <td class="sub-label">Submitted by:</td>
+                        <td>
+                            <b><span id="out-studentName">Shabin Shariar</span></b><br>
+                            <i><span id="out-studentID">251-23-06</span></i>
+                        </td>
+                    </tr>
+                    <tr><td colspan="2" style="height: 10px;"></td></tr>
+                    <tr>
+                        <td class="sub-label">Submitted to:</td>
+                        <td>
+                            <b><span id="out-teacherName">Ms. Rakeya Jannat</span></b><br>
+                            <i><span id="out-teacherDesig">Lecturer, Dept. of TE, DIU</span></i>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function updateView() {
+            const fields = [
+                'docType', 'courseCode', 'courseTitle', 'semester', 
+                'year', 'levelTerm', 'section', 'studentName', 
+                'studentID', 'teacherName', 'teacherDesig'
+            ];
+            
+            fields.forEach(field => {
+                document.getElementById('out-' + field).innerText = document.getElementById('in-' + field).value;
+            });
+        }
+
+        // PDF Generation Function
+        function generatePDF() {
+            const element = document.getElementById('pdf-content');
+            
+            // Remove the shadow temporarily for a clean print
+            element.style.boxShadow = 'none';
+
+            const opt = {
+                margin:       0,
+                filename:     'Cover_Page.pdf',
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore shadow after download
+                element.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+            });
+        }
+    </script>
+</body>
+</html>
