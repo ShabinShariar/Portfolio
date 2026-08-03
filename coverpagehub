@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Page Hub | DIU</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========================================= */
+        /* GLOBAL STYLES                             */
+        /* ========================================= */
+        :root {
+            --primary: #0d6efd;
+            --primary-hover: #0b5ed7;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --bg-color: #eef2f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            color: var(--dark);
+        }
+
+        /* ========================================= */
+        /* NAVBAR & HEADER                           */
+        /* ========================================= */
+        .navbar {
+            background-color: #ffffff;
+            padding: 15px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar .brand { font-size: 20px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .navbar .user-info { font-size: 14px; color: var(--gray); font-weight: 500; }
+
+        .hero {
+            text-align: center;
+            padding: 50px 20px 40px;
+        }
+        .hero h1 { font-size: 32px; margin: 0 0 10px 0; color: var(--dark); }
+        .hero p { font-size: 16px; color: var(--gray); margin: 0; max-width: 600px; margin: 0 auto; }
+
+        /* ========================================= */
+        /* GRID & CARD LAYOUT                        */
+        /* ========================================= */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto 50px auto;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eaeaea;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        /* Thumbnail (Small Cover Page) Area */
+        .card-thumbnail {
+            background-color: #e9ecef;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #eaeaea;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* If you have an image, it will fill this area. If not, the icon shows */
+        .card-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+        }
+
+        .card-thumbnail i {
+            font-size: 60px;
+            color: #ced4da;
+            position: absolute;
+        }
+
+        .card-body {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-body h2 { margin: 0 0 10px 0; font-size: 20px; }
+        .card-body p { margin: 0 0 20px 0; font-size: 14px; color: var(--gray); line-height: 1.5; flex-grow: 1; }
+        
+        .card-footer {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card:hover .card-footer { color: var(--primary-hover); }
+
+        /* ========================================= */
+        /* FOOTER                                    */
+        /* ========================================= */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 13px;
+            border-top: 1px solid #ddd;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <div class="brand"><i class="fas fa-file-signature"></i> DIU Cover Hub</div>
+        <div class="user-info">Developed by Shabin Shariar</div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1>Select Your Template</h1>
+        <p>Choose a format from the templates below to generate a perfectly formatted, print-ready cover page for your academic submissions.</p>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="container">
+        <div class="grid">
+            
+            <!-- Card 1: Assignment -->
+            <a href="assignment_cover.html" class="card">
+                <div class="card-thumbnail">
+                    <!-- কভার পেজের ছোট ছবি থাকলে এখানে src তে বসাবেন, নাহলে আইকন দেখাবে -->
+                    <i class="fas fa-file-alt"></i>
+                    <!-- <img src="image/assignment_thumb.jpg" alt="Assignment Preview"> -->
+                </div>
+                <div class="card-body">
+                    <h2>Assignment Cover</h2>
+                    <p>Standard plain layout for regular university assignments and coursework.</p>
+                    <div class="card-footer">Open Editor <i class="fas fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 2: Lab Report -->
+            <a href="lab_report_cover.html" class="card">
+                <div class="card-thumbnail">
+                    <i class="fas fa-flask"></i>
+                    <!-- <img src="image/lab_thumb.jpg" alt="Lab Report Preview"> -->
+                </div>
+                <div class="card-body">
+                    <h2>Lab Report Cover</h2>
+                    <p>Includes a detailed evaluation table for lab performances and report writing.</p>
+                    <div class="card-footer">Open Editor <i class="fas fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 3: Presentation -->
+            <a href="presentation_cover.html" class="card">
+                <div class="card-thumbnail">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="card-body">
+                    <h2>Presentation Cover</h2>
+                    <p>Template designed for group presentations with multiple member slots.</p>
+                    <div class="card-footer">Open Editor <i class="fas fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        &copy; 2026 Shabin Shariar | Department of Textile Engineering, DIU
+    </div>
+
+</body>
+</html>
