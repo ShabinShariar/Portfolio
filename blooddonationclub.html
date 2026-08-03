@@ -46,8 +46,8 @@
     input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
     .submit-btn { width: 100%; background: #1e70b9; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; }
     .donor-item { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-    .active-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .inactive-badge { background: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .active-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;}
+    .inactive-badge { background: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;}
 </style>
 </head>
 <body>
@@ -145,9 +145,34 @@
         if (!userProfile) {
             document.getElementById('setupModal').style.display = 'flex';
         } else {
+            checkAndForceEligibility();
             updateHeaderUI();
         }
     };
+
+    // মাসের হিসাব বের করার ফাংশন
+    function calculateMonthsPassed(lastDate) {
+        if (!lastDate) return -1;
+        const past = new Date(lastDate);
+        const now = new Date();
+        let months = (now.getFullYear() - past.getFullYear()) * 12 + (now.getMonth() - past.getMonth());
+        if (now.getDate() < past.getDate()) {
+            months--;
+        }
+        return months < 0 ? 0 : months;
+    }
+
+    // প্রোফাইল লোড হওয়ার সময় ৩ মাসের চেক (Force Inactive if < 3 months)
+    function checkAndForceEligibility() {
+        if (userProfile.lastDonation) {
+            const months = calculateMonthsPassed(userProfile.lastDonation);
+            if (months >= 0 && months < 3) {
+                userProfile.status = 'Inactive';
+                localStorage.setItem('bloodDonorProfile', JSON.stringify(userProfile));
+                sendDataToSheet({ action: 'updateStatus', id: userProfile.id, status: 'Inactive' });
+            }
+        }
+    }
 
     // Self Registration Form Submit
     document.getElementById('setupForm').addEventListener('submit', async function(e) {
@@ -163,6 +188,7 @@
             status: 'Active'
         };
 
+        checkAndForceEligibility();
         await sendDataToSheet({ ...userProfile, action: 'add' });
         localStorage.setItem('bloodDonorProfile', JSON.stringify(userProfile));
         document.getElementById('setupModal').style.display = 'none';
@@ -191,7 +217,6 @@
         document.getElementById('addBtn').innerText = 'Add Donor';
     });
 
-    // Send Data Function
     async function sendDataToSheet(payload) {
         try {
             await fetch(SCRIPT_URL, {
@@ -205,7 +230,6 @@
         }
     }
 
-    // Update Header
     function updateHeaderUI() {
         document.getElementById('display_name').innerText = userProfile.name;
         document.getElementById('display_id').innerText = 'ID: ' + userProfile.id;
@@ -215,9 +239,17 @@
         document.getElementById('myStatusText').innerText = isAct ? 'Ready to Donate' : 'Cannot Donate';
     }
 
-    // Toggle Live Status
+    // Toggle Live Status (With strict 3-month restriction)
     async function toggleMyStatus() {
         if (!userProfile) return;
+        
+        if (userProfile.lastDonation) {
+            const months = calculateMonthsPassed(userProfile.lastDonation);
+            if (months >= 0 && months < 3) {
+                alert("You cannot donate yet! 3 months have not passed since your last donation.");
+                return; // Toggle করতে দেবে না
+            }
+        }
         
         userProfile.status = userProfile.status === 'Active' ? 'Inactive' : 'Active';
         localStorage.setItem('bloodDonorProfile', JSON.stringify(userProfile));
@@ -245,10 +277,20 @@
             }
 
             filtered.forEach(donor => {
-                const stat = donor['Status'] || 'Active';
+                const rawDate = donor['Last Donation Date'] ? donor['Last Donation Date'].split('T')[0] : '';
+                let stat = donor['Status'] || 'Active';
+                let timeText = 'N/A';
+
+                // লিস্টে ৩ মাসের হিসাব এবং স্ট্যাটাস চেক
+                if (rawDate) {
+                    const months = calculateMonthsPassed(rawDate);
+                    timeText = months + ' months';
+                    if (months < 3) {
+                        stat = 'Inactive';
+                    }
+                }
+
                 const badgeClass = stat === 'Active' ? 'active-badge' : 'inactive-badge';
-                const dDate = donor['Last Donation Date'] ? donor['Last Donation Date'].split('T')[0] : 'N/A';
-                
                 const isMe = userProfile && donor['ID'] == userProfile.id ? ' (You)' : '';
 
                 listContainer.innerHTML += `
@@ -256,9 +298,12 @@
                         <div>
                             <strong>${donor['Name']}${isMe}</strong><br>
                             <span style="font-size:12px; color:#555;">ID: ${donor['ID']} | 📞 ${donor['Phone Number']}</span><br>
-                            <span style="font-size:12px; color:#777;">Last Donated: ${dDate}</span>
+                            <span style="font-size:12px; color:#777;">Last Donated: ${rawDate || 'None'}</span>
                         </div>
-                        <div class="${badgeClass}">${stat}</div>
+                        <div style="text-align:right;">
+                            <div class="${badgeClass}">${stat}</div>
+                            <div style="font-size:10px; color:#555; margin-top:4px;">${timeText}</div>
+                        </div>
                     </div>
                 `;
             });
