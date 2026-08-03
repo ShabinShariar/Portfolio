@@ -94,8 +94,10 @@
             margin: auto;
         }
 
-        .footer-row { display: flex; justify-content: space-around; padding-top: 15px; padding-bottom: 5px; font-size: 13px; }
-        .footer-line { border-top: 1px solid black; padding-top: 2px; width: 120px; text-align: center; }
+        /* Signature Table Row Styles */
+        .sig-cell { height: 75px; vertical-align: bottom; padding-bottom: 8px !important; }
+        .sig-line-container { width: 80%; margin: 0 auto; border-bottom: 1px solid black; text-align: center; min-height: 20px; padding-bottom: 3px; }
+        .sig-label { text-align: center; margin-top: 5px; font-size: 13px; }
 
         .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 25px; }
 
@@ -106,44 +108,24 @@
         /* ========================================= */
         /* PERFECT PRINT SETTINGS (Scrollbars Fixed) */
         /* ========================================= */
-        @page {
-            size: A4 portrait;
-            margin: 0; 
-        }
-
+        @page { size: A4 portrait; margin: 0; }
         @media print {
             ::-webkit-scrollbar { display: none !important; }
-            
             html, body { 
-                background: white !important; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                height: auto !important; 
-                overflow: hidden !important; 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
+                background: white !important; margin: 0 !important; padding: 0 !important; 
+                height: auto !important; overflow: hidden !important; 
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
-            
             .sidebar { display: none !important; }
-            
             .preview-area { 
-                padding: 0 !important; 
-                margin: 0 !important; 
-                display: block !important; 
-                overflow: hidden !important; 
-                height: auto !important;
+                padding: 0 !important; margin: 0 !important; display: block !important; 
+                overflow: hidden !important; height: auto !important;
             }
-            
             .a4-page { 
-                box-shadow: none !important; 
-                margin: 0 !important; 
-                width: 210mm !important; 
-                height: 297mm !important; 
-                max-height: 297mm !important;
-                padding: 20mm 20mm !important; 
-                page-break-after: avoid !important; 
-                page-break-before: avoid !important;
-                overflow: hidden !important; 
+                box-shadow: none !important; margin: 0 !important; width: 210mm !important; 
+                height: 297mm !important; max-height: 297mm !important;
+                padding: 20mm 20mm !important; page-break-after: avoid !important; 
+                page-break-before: avoid !important; overflow: hidden !important; 
             }
         }
         /* ========================================= */
@@ -155,7 +137,6 @@
             .preview-area { padding: 20px 10px; overflow-x: auto; justify-content: flex-start; }
             .a4-page { transform: scale(0.8); transform-origin: top center; margin-bottom: -60mm; }
         }
-
         @media screen and (max-width: 500px) {
             .a4-page { transform: scale(0.45); margin-bottom: -150mm; }
         }
@@ -283,15 +264,29 @@
                     <tr><td>2</td><td class="text-left">Experiment and Engagement (15)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     <tr><td>3</td><td class="text-left">Communication (5)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     <tr><td colspan="2" style="font-weight: bold; text-align: center;">TOTAL</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    
+                    <!-- NEW SIGNATURE & DATE ROW (Inside the table) -->
+                    <tr>
+                        <td colspan="3" class="sig-cell">
+                            <div class="sig-line-container">
+                                <span id="out-dateExp"></span>
+                            </div>
+                            <div class="sig-label">Date of Experiment</div>
+                        </td>
+                        <td colspan="4" class="sig-cell">
+                            <div class="sig-line-container">
+                                <span id="out-dateSub"></span>
+                            </div>
+                            <div class="sig-label">Date of Submission</div>
+                        </td>
+                        <td colspan="2" class="sig-cell">
+                            <div class="sig-line-container"></div>
+                            <div class="sig-label">Signature</div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             
-            <div class="footer-row">
-                <div class="footer-line"><span id="out-dateExp"></span><br>Date of Experiment</div>
-                <div class="footer-line"><span id="out-dateSub"></span><br>Date of Submission</div>
-                <div class="footer-line"><br>Signature</div>
-            </div>
-
             <br>
             <!-- Term Info -->
             <div class="term-info">
