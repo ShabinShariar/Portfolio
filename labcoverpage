@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIU Lab Report Cover Page Editor</title>
+    <style>
+        /* ========================================= */
+        /* GENERAL UI STYLES (Screen View)           */
+        /* ========================================= */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #525659;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #f8f9fa;
+            padding: 20px;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            z-index: 10;
+            font-family: Arial, sans-serif;
+        }
+        .sidebar-title {
+            text-align: center; font-size: 18px; font-weight: bold;
+            margin-bottom: 20px; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px;
+        }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #444; }
+        .form-group input { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; 
+            border-radius: 4px; box-sizing: border-box; font-size: 14px;
+        }
+        .print-btn {
+            width: 100%; padding: 12px; background: #007bff; color: white; border: none;
+            cursor: pointer; margin-top: 20px; font-weight: bold; font-size: 16px; border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .print-btn:hover { background: #0056b3; }
+
+        .preview-area {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* ========================================= */
+        /* EXACT A4 PAGE DESIGN                      */
+        /* ========================================= */
+        .a4-page {
+            width: 210mm;
+            height: 297mm; 
+            background: white;
+            box-sizing: border-box;
+            padding: 20mm 20mm; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            color: black;
+            position: relative;
+            font-size: 15px;
+        }
+
+        .dept-header { text-align: center; font-style: italic; color: #666; font-size: 12px; margin-bottom: 5px; }
+        .header-section { text-align: center; margin-bottom: 20px; }
+        .logo-img { max-width: 450px; height: auto; }
+        .doc-title { font-size: 16px; font-weight: bold; text-decoration: underline; margin-top: 15px; text-transform: uppercase; }
+
+        .course-info { margin-bottom: 15px; line-height: 1.8; }
+        .course-info-row { display: flex; justify-content: space-between; font-weight: bold; }
+        .course-info-single { font-weight: bold; }
+        
+        table.eval-table { 
+            width: 100%; border-collapse: collapse; text-align: center; 
+            font-size: 13px; margin-bottom: 20px; table-layout: fixed;
+        }
+        table.eval-table th, table.eval-table td { border: 1px solid black; padding: 4px; }
+        table.eval-table th { font-weight: bold; }
+        .text-left { text-align: left !important; padding-left: 8px !important; }
+        
+        .section-title { background-color: #d3d3d3; font-weight: bold; text-align: center; letter-spacing: 1px; }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            height: 80px;
+            margin: auto;
+        }
+
+        .footer-row { display: flex; justify-content: space-around; padding-top: 15px; padding-bottom: 5px; font-size: 13px; }
+        .footer-line { border-top: 1px solid black; padding-top: 2px; width: 120px; text-align: center; }
+
+        .term-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 25px; }
+
+        table.submission-table { width: 100%; border: none; font-size: 15px; }
+        table.submission-table td { border: none; padding: 3px 0; vertical-align: top; }
+        .sub-label { width: 120px; font-style: italic; font-weight: bold; }
+
+        /* ========================================= */
+        /* PERFECT PRINT SETTINGS (Scrollbars Fixed) */
+        /* ========================================= */
+        @page {
+            size: A4 portrait;
+            margin: 0; 
+        }
+
+        @media print {
+            ::-webkit-scrollbar { display: none !important; }
+            
+            html, body { 
+                background: white !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                height: auto !important; 
+                overflow: hidden !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+            }
+            
+            .sidebar { display: none !important; }
+            
+            .preview-area { 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                display: block !important; 
+                overflow: hidden !important; 
+                height: auto !important;
+            }
+            
+            .a4-page { 
+                box-shadow: none !important; 
+                margin: 0 !important; 
+                width: 210mm !important; 
+                height: 297mm !important; 
+                max-height: 297mm !important;
+                padding: 20mm 20mm !important; 
+                page-break-after: avoid !important; 
+                page-break-before: avoid !important;
+                overflow: hidden !important; 
+            }
+        }
+        /* ========================================= */
+        /* MOBILE & IPAD RESPONSIVE DESIGN           */
+        /* ========================================= */
+        @media screen and (max-width: 900px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { width: 100%; box-sizing: border-box; border-bottom: 2px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .preview-area { padding: 20px 10px; overflow-x: auto; justify-content: flex-start; }
+            .a4-page { transform: scale(0.8); transform-origin: top center; margin-bottom: -60mm; }
+        }
+
+        @media screen and (max-width: 500px) {
+            .a4-page { transform: scale(0.45); margin-bottom: -150mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Editor Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-title">Cover Page Editor</div>
+        <div class="form-group">
+            <label>Cover Type</label>
+            <input type="text" id="in-docType" value="LAB REPORT" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="in-courseCode" value="0723-219" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Course Title</label>
+            <input type="text" id="in-courseTitle" value="Apparel Manufacturing 1" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Experiment No.</label>
+            <input type="text" id="in-expNo" value="01" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Experiment Title</label>
+            <input type="text" id="in-expTitle" value="Study on Draw Frame Machine" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Semester</label>
+            <input type="text" id="in-semester" value="Summer" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Year</label>
+            <input type="text" id="in-year" value="2026" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Level-Term</label>
+            <input type="text" id="in-levelTerm" value="L2T2" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Section</label>
+            <input type="text" id="in-section" value="G1" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" id="in-studentName" value="Shabin Shariar" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Student ID</label>
+            <input type="text" id="in-studentID" value="251-23-06" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Teacher's Name</label>
+            <input type="text" id="in-teacherName" value="Ms. Rakeya Jannat" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Date of Experiment</label>
+            <input type="text" id="in-dateExp" value="" placeholder="DD/MM/YYYY" oninput="updateView()">
+        </div>
+        <div class="form-group">
+            <label>Date of Submission</label>
+            <input type="text" id="in-dateSub" value="" placeholder="DD/MM/YYYY" oninput="updateView()">
+        </div>
+        <button class="print-btn" onclick="window.print()">Print / Download PDF</button>
+    </div>
+
+    <!-- Live Preview Area -->
+    <div class="preview-area">
+        <div class="a4-page">
+            
+            <!-- Header -->
+            <div class="dept-header">Department of Textile Engineering</div>
+            <div class="header-section">
+                <!-- Replace src with your exact path if needed, keeping default from prev code -->
+                <img src="image/diucepcover.png" alt="DIU Logo" class="logo-img">
+                <div class="doc-title" id="out-docType">LAB REPORT</div>
+            </div>
+
+            <!-- Course Info -->
+            <div class="course-info">
+                <div class="course-info-row">
+                    <span>Course Code: <span id="out-courseCode">0723-219</span></span>
+                    <span>Course Title: <span id="out-courseTitle">Apparel Manufacturing 1</span></span>
+                </div>
+                <div class="course-info-single">Experiment No.: <span id="out-expNo">01</span></div>
+                <div class="course-info-single">Experiment Title: <span id="out-expTitle">Study on Draw Frame Machine</span></div>
+            </div>
+
+            <!-- Evaluation Table -->
+            <table class="eval-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 5%;">No.</th>
+                        <th rowspan="2" style="width: 38%;">Evaluation Criteria with Marks</th>
+                        <th colspan="5">Put Tick (&check;) Mark</th>
+                        <th rowspan="2" style="width: 8%;"><div class="vertical-text">Marks Obtained</div></th>
+                        <th rowspan="2" style="width: 17%;">Remarks</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 5%;"><div class="vertical-text">Excellent</div></th>
+                        <th style="width: 5%;"><div class="vertical-text">Good</div></th>
+                        <th style="width: 5%;"><div class="vertical-text">Fair</div></th>
+                        <th style="width: 5%;"><div class="vertical-text">Poor</div></th>
+                        <th style="width: 5%;"><div class="vertical-text">Fail</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="section-title">REPORT WRITING</td>
+                    </tr>
+                    <tr><td>1</td><td class="text-left">Theory & Objectives (2.5)</td><td></td><td></td><td></td><td></td><td></td><td></td><td rowspan="6"></td></tr>
+                    <tr><td>2</td><td class="text-left">Materials & Methods (5)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>3</td><td class="text-left">Data Analysis & Discussion/Diagram (10)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>4</td><td class="text-left">Precautions and Conclusion (2.5)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>5</td><td class="text-left">Time Management (5)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td colspan="2" style="font-weight: bold; text-align: center;">TOTAL</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    
+                    <tr>
+                        <td colspan="9" class="section-title">LAB PERFORMANCE</td>
+                    </tr>
+                    <tr><td>1</td><td class="text-left">Preparation for Lab (5)</td><td></td><td></td><td></td><td></td><td></td><td></td><td rowspan="4"></td></tr>
+                    <tr><td>2</td><td class="text-left">Experiment and Engagement (15)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td>3</td><td class="text-left">Communication (5)</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td colspan="2" style="font-weight: bold; text-align: center;">TOTAL</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+            
+            <div class="footer-row">
+                <div class="footer-line"><span id="out-dateExp"></span><br>Date of Experiment</div>
+                <div class="footer-line"><span id="out-dateSub"></span><br>Date of Submission</div>
+                <div class="footer-line"><br>Signature</div>
+            </div>
+
+            <br>
+            <!-- Term Info -->
+            <div class="term-info">
+                <div>Semester: <span id="out-semester">Summer</span></div>
+                <div>Year: <span id="out-year">2026</span></div>
+                <div>Level-Term: <span id="out-levelTerm">L2T2</span></div>
+                <div>Section: <span id="out-section">G1</span></div>
+            </div>
+
+            <!-- Submission Section -->
+            <table class="submission-table">
+                <tr>
+                    <td class="sub-label">Submitted by:</td>
+                    <td>
+                        Name: <b><span id="out-studentName">Shabin Shariar</span></b><br>
+                        ID: <i><span id="out-studentID">251-23-06</span></i><br>
+                        <i>Dept. of Textile Engineering, DIU.</i>
+                    </td>
+                </tr>
+                <tr><td colspan="2" style="height: 15px;"></td></tr>
+                <tr>
+                    <td class="sub-label">Submitted to:</td>
+                    <td>
+                        Name: <b><span id="out-teacherName">Ms. Rakeya Jannat</span></b><br>
+                        <i>Dept. of Textile Engineering, DIU</i>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function updateView() {
+            const fields = [
+                'docType', 'courseCode', 'courseTitle', 'expNo', 'expTitle',
+                'semester', 'year', 'levelTerm', 'section', 'studentName', 
+                'studentID', 'teacherName', 'dateExp', 'dateSub'
+            ];
+            
+            fields.forEach(field => {
+                const inputVal = document.getElementById('in-' + field).value;
+                document.getElementById('out-' + field).innerText = inputVal;
+            });
+        }
+    </script>
+</body>
+</html>
