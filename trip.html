@@ -108,7 +108,7 @@
 
     <div id="dashboardTab" class="tab-content">
         <div class="card" style="background: #f8f9fa; border: 1px solid #dfe6e9;">
-            <div class="card-header"><h3 style="color: var(--text-dark);">☁️ Cloud Sync (Google Drive)</h3></div>
+            <div class="card-header"><h3 style="color: var(--text-dark);">☁️ Cloud Sync</h3></div>
             <p style="font-size: 13px; color: var(--text-light); margin-top: 0;">Save your data to Google Sheets to prevent data loss.</p>
             <button class="btn green" id="backupBtn" onclick="backupToCloud()">⬆ Backup Data to Cloud</button>
             <button class="btn blue" id="restoreBtn" onclick="restoreFromCloud()">⬇ Restore Data from Cloud</button>
@@ -122,6 +122,20 @@
                 <div class="stat-box"><h4>Net Profit</h4><p id="lifeProf" style="color:#1e90ff;">TK 0</p></div>
             </div>
         </div>
+        
+        <!-- NEW: Monthly Overview Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="color: var(--primary-color);">Monthly Overview</h3>
+                <input type="month" id="dashMonthPicker" class="custom-date" style="padding: 5px 10px; font-size: 13px;" onchange="updateUI()">
+            </div>
+            <div class="card-row">
+                <div class="stat-box"><h4>Income</h4><p id="dashMonthlyInc" style="color:#2ed573;">TK 0</p></div>
+                <div class="stat-box"><h4>Expense</h4><p id="dashMonthlyExp" style="color:#ff4757;">TK 0</p></div>
+                <div class="stat-box"><h4>Profit</h4><p id="dashMonthlyProf" style="color:#1e90ff;">TK 0</p></div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <h3 style="color: var(--primary-color);">Daily Overview</h3>
@@ -140,9 +154,17 @@
 
     <div id="targetTab" class="tab-content">
         <div class="card" style="text-align: center; padding-top: 30px; padding-bottom: 30px;">
-            <h3 style="color: var(--text-dark); font-size: 16px; margin-top:0;">Monthly Target Progress</h3>
+            <!-- Target based on Total Income -->
+            <h3 style="color: var(--text-dark); font-size: 16px; margin-top:0;">Target Progress (Total Income)</h3>
             <h1 id="targetPercentage" style="font-size: 48px; margin: 15px 0; font-weight: 700;">0%</h1>
-            <p style="color: var(--text-light); font-weight: 600;">Earned: <span style="color:#2ed573;">TK <span id="targetEarned">0</span></span> / TK <span id="targetAmount">0</span></p>
+            <p style="color: var(--text-light); font-weight: 600; margin-bottom: 25px;">Earned: <span style="color:#2ed573;">TK <span id="targetEarned">0</span></span> / TK <span id="targetAmount">0</span></p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            
+            <!-- NEW: Target based on Net Profit -->
+            <h3 style="color: var(--text-dark); font-size: 16px; margin-top:0;">Target Progress (Net Profit)</h3>
+            <h1 id="targetNetPercentage" style="font-size: 48px; margin: 15px 0; font-weight: 700;">0%</h1>
+            <p style="color: var(--text-light); font-weight: 600;">Net Profit: <span style="color:#1e90ff;">TK <span id="targetNetEarned">0</span></span> / TK <span id="targetAmountNet">0</span></p>
         </div>
         <div class="card">
             <h3 style="font-size: 14px; margin-top:0; color: var(--text-light);">Update This Month's Target</h3>
@@ -190,8 +212,12 @@
 
         window.onload = () => {
             let today = new Date().toISOString().split('T')[0];
+            let currentMonth = today.slice(0, 7); // Format: YYYY-MM
+            
             document.getElementById('datePicker').value = today;
             document.getElementById('dashDatePicker').value = today;
+            document.getElementById('dashMonthPicker').value = currentMonth;
+            
             updateUI();
         };
 
@@ -239,11 +265,11 @@
             let newT = parseFloat(document.getElementById('newTargetInput').value) || 0;
             targets[currentMonth] = newT;
             localStorage.setItem('my_targets', JSON.stringify(targets));
+            document.getElementById('newTargetInput').value = '';
             updateUI();
             alert("Target successfully updated!");
         }
 
-        // --- NEW: Delete Functions ---
         function deleteTrip(index) {
             let confirmDelete = confirm("Are you sure you want to delete this trip?");
             if (confirmDelete) {
@@ -263,11 +289,11 @@
         }
 
         function updateUI() {
+            // -- Daily Tab Update --
             let selectedDate = document.getElementById('datePicker').value;
             let dInc = 0, dKm = 0; let tripsHtml = '';
             let todaysTripsCount = 0;
             
-            // Loop backwards to show newest first, passing original index for deletion
             for(let i = allTrips.length - 1; i >= 0; i--) {
                 let t = allTrips[i];
                 if(t.date === selectedDate) {
@@ -291,6 +317,7 @@
             document.getElementById('tInc').innerText = "TK " + dInc;
             document.getElementById('tripList').innerHTML = tripsHtml || '<p style="text-align:center;color:#bdc3c7; font-size: 14px; margin-top:20px;">No trips added for this date.</p>';
 
+            // -- Lifetime Overview --
             let lInc = 0, lExp = 0;
             allTrips.forEach(t => lInc += t.income);
             allExpenses.forEach(e => lExp += e.amount);
@@ -298,6 +325,16 @@
             document.getElementById('lifeExp').innerText = "TK " + lExp;
             document.getElementById('lifeProf').innerText = "TK " + (lInc - lExp);
 
+            // -- Monthly Overview --
+            let dashSelectedMonth = document.getElementById('dashMonthPicker').value; // YYYY-MM
+            let dashMonthlyInc = 0, dashMonthlyExp = 0;
+            allTrips.filter(t => t.date.startsWith(dashSelectedMonth)).forEach(t => dashMonthlyInc += t.income);
+            allExpenses.filter(e => e.date.startsWith(dashSelectedMonth)).forEach(e => dashMonthlyExp += e.amount);
+            document.getElementById('dashMonthlyInc').innerText = "TK " + dashMonthlyInc;
+            document.getElementById('dashMonthlyExp').innerText = "TK " + dashMonthlyExp;
+            document.getElementById('dashMonthlyProf').innerText = "TK " + (dashMonthlyInc - dashMonthlyExp);
+
+            // -- Daily Overview --
             let dashSelectedDate = document.getElementById('dashDatePicker').value;
             let dashDailyInc = 0, dashDailyExp = 0;
             allTrips.filter(t => t.date === dashSelectedDate).forEach(t => dashDailyInc += t.income);
@@ -323,14 +360,32 @@
             }
             document.getElementById('expenseList').innerHTML = expHtml || '<p style="text-align:center;color:#bdc3c7; font-size: 14px; margin-top:20px;">No expenses recorded.</p>';
 
+            // -- Target Tab Update --
             let currentMonthStr = new Date().toISOString().slice(0, 7); 
-            let curTarget = targets[currentMonthStr] || 0; let curMonthEarned = 0;
+            let curTarget = targets[currentMonthStr] || 0; 
+            
+            let curMonthEarned = 0;
+            let curMonthExp = 0;
+            
             allTrips.forEach(t => { if(t.date.startsWith(currentMonthStr)) curMonthEarned += t.income; });
-            let percent = curTarget > 0 ? Math.min((curMonthEarned / curTarget) * 100, 100).toFixed(1) : 0;
+            allExpenses.forEach(e => { if(e.date.startsWith(currentMonthStr)) curMonthExp += e.amount; });
+            
+            let curMonthNet = curMonthEarned - curMonthExp;
+
+            // Total Income Percentage calculation
+            let percent = curTarget > 0 ? ((curMonthEarned / curTarget) * 100).toFixed(1) : 0;
             document.getElementById('targetPercentage').innerText = percent + "%";
             document.getElementById('targetPercentage').style.color = percent >= 100 ? "#2ed573" : "var(--primary-color)";
             document.getElementById('targetEarned').innerText = curMonthEarned;
             document.getElementById('targetAmount').innerText = curTarget;
+            
+            // Net Profit Percentage calculation
+            let netPercent = curTarget > 0 ? ((curMonthNet / curTarget) * 100).toFixed(1) : 0;
+            document.getElementById('targetNetPercentage').innerText = netPercent + "%";
+            // If negative show red, if >=100 show blue/green, else show primary
+            document.getElementById('targetNetPercentage').style.color = netPercent >= 100 ? "#1e90ff" : (netPercent < 0 ? "#ff4757" : "var(--primary-color)");
+            document.getElementById('targetNetEarned').innerText = curMonthNet;
+            document.getElementById('targetAmountNet').innerText = curTarget;
         }
 
         // =====================================
