@@ -1,1 +1,3371 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>TripMate — Smart Group Trip Budget Manager (Google Sheets DB Ready)</title>
+  <!-- Web App Icon / Favicon & Mobile Home Screen Icon -->
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-Title" content="TripMate" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2310b981'/%3E%3Cstop offset='100%25' stop-color='%23047857'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M16 22h32a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V26a4 4 0 0 1 4-4zm4-6h24v6H20v-6z' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='35' r='7' fill='%23ffffff'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='11' font-family='Arial' font-weight='bold' fill='%23047857'%3E%E0%A7%B3%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23059669'/%3E%3Cpath d='M16 22h32a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V26a4 4 0 0 1 4-4zm4-6h24v6H20v-6z' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='35' r='7' fill='%23ffffff'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-size='11' font-family='Arial' font-weight='bold' fill='%23047857'%3E%E0%A7%B3%3C/text%3E%3C/svg%3E" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Google Fonts: Inter & Hind Siliguri (for Bangla) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- React 18 + ReactDOM 18 + Babel Standalone for Single-File GitHub Pages Execution -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Hind Siliguri', sans-serif;
+      background-color: #f8faf9;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-emerald-600 selection:text-white pb-20 md:pb-0">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // ============================================================================
+    // 1. PRECISION-SAFE POISHA MONETARY & SPLITTING ENGINE (1 BDT = 100 POISHA)
+    // ============================================================================
+
+    function bdtToPoisha(bdt) {
+      const num = typeof bdt === 'string' ? parseFloat(bdt) : bdt;
+      if (isNaN(num) || !isFinite(num)) return 0;
+      return Math.round(num * 100);
+    }
+
+    function poishaToBdt(poisha) {
+      return Math.round(poisha || 0) / 100;
+    }
+
+    function formatCurrency(poisha, symbol = '৳', alwaysShowDecimals = false) {
+      const isNegative = (poisha || 0) < 0;
+      const absPoisha = Math.abs(Math.round(poisha || 0));
+      const bdt = absPoisha / 100;
+      const hasFraction = absPoisha % 100 !== 0;
+
+      const formatted = bdt.toLocaleString('en-IN', {
+        minimumFractionDigits: hasFraction || alwaysShowDecimals ? 2 : 0,
+        maximumFractionDigits: 2
+      });
+
+      return `${isNegative ? '-' : ''}${symbol}${formatted}`;
+    }
+
+    /**
+     * Deterministic Fair Expense Splitting Algorithm in Poisha.
+     * Divides `totalPoisha` strictly among `participantIds`.
+     * Non-participants receive 0. Sum of shares === totalPoisha with 0 drift.
+     */
+    function calculateDeterministicSplit(totalPoisha, participantIds) {
+      const k = (participantIds || []).length;
+      if (k === 0 || totalPoisha <= 0) return [];
+      const cleanTotal = Math.round(totalPoisha);
+      const baseShare = Math.floor(cleanTotal / k);
+      const remainder = cleanTotal % k;
+
+      return participantIds.map((memberId, index) => ({
+        memberId,
+        sharePoisha: index < remainder ? baseShare + 1 : baseShare
+      }));
+    }
+
+    function calculateTripFinancialSummary(trip, allMembers, tripContributions, tripExpenses) {
+      const totalCollectedPoisha = tripContributions.reduce((sum, c) => sum + (c.amountPoisha || 0), 0);
+
+      const tripFundExpensesPoisha = tripExpenses
+        .filter((e) => e.paymentSource === 'trip_fund')
+        .reduce((sum, e) => sum + (e.amountPoisha || 0), 0);
+
+      const personalExpensesPoisha = tripExpenses
+        .filter((e) => e.paymentSource === 'personal')
+        .reduce((sum, e) => sum + (e.amountPoisha || 0), 0);
+
+      const totalExpensesPoisha = tripFundExpensesPoisha + personalExpensesPoisha;
+      const remainingFundCashPoisha = totalCollectedPoisha - tripFundExpensesPoisha;
+
+      const involvedMemberIds = new Set(trip.memberIds || []);
+      tripContributions.forEach((c) => {
+        if (allMembers.some((m) => m.id === c.memberId)) involvedMemberIds.add(c.memberId);
+      });
+      tripExpenses.forEach((e) => {
+        if (allMembers.some((m) => m.id === e.paidByMemberId)) involvedMemberIds.add(e.paidByMemberId);
+        (e.participantIds || []).forEach((pid) => {
+          if (allMembers.some((m) => m.id === pid)) involvedMemberIds.add(pid);
+        });
+        (e.allocations || []).forEach((a) => {
+          if (allMembers.some((m) => m.id === a.memberId)) involvedMemberIds.add(a.memberId);
+        });
+      });
+
+      const memberMap = new Map();
+      allMembers.forEach((m) => memberMap.set(m.id, m));
+
+      const memberFinancials = Array.from(involvedMemberIds).map((memberId) => {
+        const member = memberMap.get(memberId);
+        const contributedPoisha = tripContributions
+          .filter((c) => c.memberId === memberId)
+          .reduce((sum, c) => sum + (c.amountPoisha || 0), 0);
+
+        const paidPersonallyPoisha = tripExpenses
+          .filter((e) => e.paymentSource === 'personal' && e.paidByMemberId === memberId)
+          .reduce((sum, e) => sum + (e.amountPoisha || 0), 0);
+
+        let allocatedTripFundExpensePoisha = 0;
+        let allocatedPersonalExpensePoisha = 0;
+        let participatedExpenseCount = 0;
+
+        tripExpenses.forEach((e) => {
+          const alloc = (e.allocations || []).find((a) => a.memberId === memberId);
+          if (alloc && alloc.sharePoisha > 0) {
+            participatedExpenseCount += 1;
+            if (e.paymentSource === 'trip_fund') {
+              allocatedTripFundExpensePoisha += alloc.sharePoisha;
+            } else {
+              allocatedPersonalExpensePoisha += alloc.sharePoisha;
+            }
+          }
+        });
+
+        const totalAllocatedExpensePoisha =
+          allocatedTripFundExpensePoisha + allocatedPersonalExpensePoisha;
+        const totalCreditPoisha = contributedPoisha + paidPersonallyPoisha;
+        const netBalancePoisha = totalCreditPoisha - totalAllocatedExpensePoisha;
+        const personalReimbursementNetPoisha = paidPersonallyPoisha - allocatedPersonalExpensePoisha;
+
+        return {
+          memberId,
+          memberName: member ? member.fullName : 'Member',
+          avatarColor: member ? member.avatarColor : 'bg-emerald-600',
+          isCurrentlyInTrip: (trip.memberIds || []).includes(memberId),
+          contributedPoisha,
+          paidPersonallyPoisha,
+          totalCreditPoisha,
+          allocatedTripFundExpensePoisha,
+          allocatedPersonalExpensePoisha,
+          totalAllocatedExpensePoisha,
+          netBalancePoisha,
+          personalReimbursementNetPoisha,
+          participatedExpenseCount
+        };
+      });
+
+      // Peer-to-peer personal expense reimbursements
+      const personalDebtors = memberFinancials
+        .filter((m) => m.personalReimbursementNetPoisha < 0)
+        .map((m) => ({ id: m.memberId, name: m.memberName, amount: Math.abs(m.personalReimbursementNetPoisha) }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const personalCreditors = memberFinancials
+        .filter((m) => m.personalReimbursementNetPoisha > 0)
+        .map((m) => ({ id: m.memberId, name: m.memberName, amount: m.personalReimbursementNetPoisha }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const personalSettlementTransfers = [];
+      let i = 0, j = 0;
+      while (i < personalDebtors.length && j < personalCreditors.length) {
+        const debtor = personalDebtors[i];
+        const creditor = personalCreditors[j];
+        const transfer = Math.min(debtor.amount, creditor.amount);
+        if (transfer > 0) {
+          personalSettlementTransfers.push({
+            fromMemberId: debtor.id,
+            fromMemberName: debtor.name,
+            toMemberId: creditor.id,
+            toMemberName: creditor.name,
+            amountPoisha: transfer,
+            type: 'PERSONAL_REIMBURSEMENT',
+            explanation: `${debtor.name} reimburses ${creditor.name} for personally paid expenses`
+          });
+        }
+        debtor.amount -= transfer;
+        creditor.amount -= transfer;
+        if (debtor.amount === 0) i++;
+        if (creditor.amount === 0) j++;
+      }
+
+      // Final trip fund settlement
+      const finalTripSettlementTransfers = [];
+      memberFinancials.forEach((m) => {
+        if (m.netBalancePoisha < 0) {
+          finalTripSettlementTransfers.push({
+            fromMemberId: m.memberId,
+            fromMemberName: m.memberName,
+            toMemberId: 'TRIP_FUND',
+            toMemberName: 'Trip Fund / Organizer',
+            amountPoisha: Math.abs(m.netBalancePoisha),
+            type: 'FINAL_FUND_SETTLEMENT',
+            explanation: `${m.memberName} pays outstanding deficit into Trip Fund`
+          });
+        } else if (m.netBalancePoisha > 0) {
+          finalTripSettlementTransfers.push({
+            fromMemberId: 'TRIP_FUND',
+            fromMemberName: 'Trip Fund / Organizer',
+            toMemberId: m.memberId,
+            toMemberName: m.memberName,
+            amountPoisha: m.netBalancePoisha,
+            type: 'FINAL_FUND_SETTLEMENT',
+            explanation: `Trip Fund refunds / reimburses ${m.memberName}'s net positive balance`
+          });
+        }
+      });
+
+      // Category breakdown
+      const catMap = new Map();
+      tripExpenses.forEach((e) => {
+        const existing = catMap.get(e.category) || { amountPoisha: 0, count: 0 };
+        catMap.set(e.category, {
+          amountPoisha: existing.amountPoisha + e.amountPoisha,
+          count: existing.count + 1
+        });
+      });
+
+      const categoryBreakdown = Array.from(catMap.entries())
+        .map(([category, data]) => ({ category, amountPoisha: data.amountPoisha, count: data.count }))
+        .sort((a, b) => b.amountPoisha - a.amountPoisha);
+
+      const budgetUtilizationPercent =
+        trip.expectedBudgetPoisha > 0
+          ? Math.round((totalExpensesPoisha / trip.expectedBudgetPoisha) * 1000) / 10
+          : 0;
+
+      return {
+        tripId: trip.id,
+        totalCollectedPoisha,
+        tripFundExpensesPoisha,
+        personalExpensesPoisha,
+        totalExpensesPoisha,
+        remainingFundCashPoisha,
+        expectedBudgetPoisha: trip.expectedBudgetPoisha,
+        budgetUtilizationPercent,
+        memberFinancials,
+        personalSettlementTransfers,
+        finalTripSettlementTransfers,
+        categoryBreakdown
+      };
+    }
+
+    // ============================================================================
+    // 2. TIMEZONE (ASIA/DHAKA) & BILINGUAL HELPERS
+    // ============================================================================
+
+    function getCurrentDhakaDateTimeInput() {
+      try {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Dhaka',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).formatToParts(now);
+        const getPart = (type) => parts.find((p) => p.type === type)?.value || '00';
+        const hour = getPart('hour') === '24' ? '00' : getPart('hour');
+        return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${hour}:${getPart('minute')}`;
+      } catch {
+        return '2026-10-29T22:30';
+      }
+    }
+
+    function formatDhakaDateTime(isoOrLocal) {
+      if (!isoOrLocal) return '—';
+      try {
+        const date = new Date(isoOrLocal);
+        if (isNaN(date.getTime())) return isoOrLocal.replace('T', ' ');
+        return (
+          new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Dhaka',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }).format(date) + ' (BST)'
+        );
+      } catch {
+        return isoOrLocal;
+      }
+    }
+
+    const DEFAULT_CATEGORIES = [
+      'Transport',
+      'Food',
+      'Accommodation',
+      'Tickets & Entry Fees',
+      'Shopping',
+      'Activities',
+      'Emergency',
+      'Other'
+    ];
+
+    const AVATAR_COLORS = [
+      'bg-emerald-600',
+      'bg-teal-600',
+      'bg-cyan-600',
+      'bg-indigo-600',
+      'bg-amber-600',
+      'bg-rose-600',
+      'bg-purple-600'
+    ];
+
+    const I18N = {
+      en: {
+        appName: 'TripMate',
+        tagline: 'Smart Group Trip Budget Manager',
+        dashboard: 'Dashboard',
+        myTrips: 'My Trips',
+        addExpense: 'Add Expense',
+        members: 'Members',
+        reportsExport: 'Reports & Export',
+        googleSheetsDb: 'Google Sheets DB',
+        overallDashboard: 'Overall All-Trips View',
+        totalCollected: 'Total Money Collected',
+        totalExpenses: 'Total Trip Expenses',
+        remainingCash: 'Remaining Trip-Fund Cash',
+        createTrip: 'Create Trip',
+        recordContribution: 'Deposit Fund',
+        quickAddExpense: 'Add Expense'
+      },
+      bn: {
+        appName: 'ট্রিপমেট (TripMate)',
+        tagline: 'স্মার্ট গ্রুপ ট্রিপ বাজেট ম্যানেজার',
+        dashboard: 'ড্যাশবোর্ড',
+        myTrips: 'আমার ট্রিপসমূহ',
+        addExpense: 'খরচ যোগ করুন',
+        members: 'সদস্যবৃন্দ',
+        reportsExport: 'রিপোর্ট ও এক্সপোর্ট',
+        googleSheetsDb: 'গুগল শিট ডাটাবেস',
+        overallDashboard: 'সকল ট্রিপের সামগ্রিক চিত্র',
+        totalCollected: 'মোট জমা তহবিল',
+        totalExpenses: 'মোট খরচ',
+        remainingCash: 'ট্রিপ ফান্ডে অবশিষ্ট ক্যাশ',
+        createTrip: 'নতুন ট্রিপ খুলুন',
+        recordContribution: 'ফান্ড জমা দিন',
+        quickAddExpense: 'খরচ লিখুন'
+      }
+    };
+
+    // ============================================================================
+    // 3. INITIAL SEED DATA (MANDATORY 5-MEMBER COX'S BAZAR TEST SCENARIO)
+    // ============================================================================
+
+    function createInitialSeedState() {
+      const members = [
+        { id: 'm_rahim', fullName: 'Rahim', phoneOrEmail: '+880 1711-234501', avatarColor: 'bg-emerald-600', status: 'Active', role: 'Organizer', notes: 'Trip Treasurer & Organizer', createdAt: '2026-10-20T10:00:00+06:00' },
+        { id: 'm_karim', fullName: 'Karim', phoneOrEmail: '+880 1812-334502', avatarColor: 'bg-teal-600', status: 'Active', role: 'Member', notes: 'Transport coordinator', createdAt: '2026-10-20T10:05:00+06:00' },
+        { id: 'm_hasan', fullName: 'Hasan', phoneOrEmail: '+880 1913-444503', avatarColor: 'bg-cyan-600', status: 'Active', role: 'Member', notes: 'Food scout', createdAt: '2026-10-20T10:10:00+06:00' },
+        { id: 'm_sakib', fullName: 'Sakib', phoneOrEmail: '+880 1614-554504', avatarColor: 'bg-indigo-600', status: 'Active', role: 'Member', notes: 'Photography & tickets', createdAt: '2026-10-20T10:15:00+06:00' },
+        { id: 'm_nabil', fullName: 'Nabil', phoneOrEmail: '+880 1515-664505', avatarColor: 'bg-amber-600', status: 'Active', role: 'Member', notes: 'Hotel booking lead', createdAt: '2026-10-20T10:20:00+06:00' }
+      ];
+
+      const trip1 = {
+        id: 'trip_coxs_bazar',
+        name: "Cox's Bazar Beach Tour",
+        destination: "Cox's Bazar & Marine Drive",
+        startDate: '2026-10-25',
+        endDate: '2026-10-30',
+        description: '5-member group tour: ৳10,000 collected, ৳1,000 lunch among 3 members (Rahim, Karim, Hasan), ৳2,000 transport among all 5 members.',
+        memberIds: ['m_rahim', 'm_karim', 'm_hasan', 'm_sakib', 'm_nabil'],
+        expectedBudgetPoisha: bdtToPoisha(12000),
+        status: 'Ongoing',
+        createdAt: '2026-10-24T09:00:00+06:00'
+      };
+
+      const trip2 = {
+        id: 'trip_sylhet',
+        name: 'Sylhet & Ratargul Monsoon Tour',
+        destination: 'Sylhet & Sreemangal',
+        startDate: '2026-09-10',
+        endDate: '2026-09-14',
+        description: 'Demonstrates both Trip-Fund expenses and Personally Paid reimbursements.',
+        memberIds: ['m_rahim', 'm_karim', 'm_hasan', 'm_sakib'],
+        expectedBudgetPoisha: bdtToPoisha(16000),
+        status: 'Completed',
+        createdAt: '2026-09-08T18:00:00+06:00'
+      };
+
+      const contributions = [
+        { id: 'c_1', tripId: 'trip_coxs_bazar', memberId: 'm_rahim', amountPoisha: bdtToPoisha(2000), paymentMethod: 'Cash', reference: 'CASH-CB-01', note: 'Initial fund deposit', dateTime: '2026-10-25T08:00', createdAt: '2026-10-25T08:00:00+06:00' },
+        { id: 'c_2', tripId: 'trip_coxs_bazar', memberId: 'm_karim', amountPoisha: bdtToPoisha(2000), paymentMethod: 'Mobile Banking', reference: 'bKash-982341', note: 'bKash transfer', dateTime: '2026-10-25T08:15', createdAt: '2026-10-25T08:15:00+06:00' },
+        { id: 'c_3', tripId: 'trip_coxs_bazar', memberId: 'm_hasan', amountPoisha: bdtToPoisha(2000), paymentMethod: 'Mobile Banking', reference: 'Nagad-771209', note: 'Nagad transfer', dateTime: '2026-10-25T08:30', createdAt: '2026-10-25T08:30:00+06:00' },
+        { id: 'c_4', tripId: 'trip_coxs_bazar', memberId: 'm_sakib', amountPoisha: bdtToPoisha(2000), paymentMethod: 'Bank', reference: 'CityTouch-4410', note: 'Bank transfer', dateTime: '2026-10-25T08:45', createdAt: '2026-10-25T08:45:00+06:00' },
+        { id: 'c_5', tripId: 'trip_coxs_bazar', memberId: 'm_nabil', amountPoisha: bdtToPoisha(2000), paymentMethod: 'Cash', reference: 'CASH-CB-05', note: 'Paid at counter', dateTime: '2026-10-25T09:00', createdAt: '2026-10-25T09:00:00+06:00' },
+        { id: 'c_6', tripId: 'trip_sylhet', memberId: 'm_rahim', amountPoisha: bdtToPoisha(3500), paymentMethod: 'Cash', reference: 'SYL-01', note: 'Trip deposit', dateTime: '2026-09-10T07:00', createdAt: '2026-09-10T07:00:00+06:00' },
+        { id: 'c_7', tripId: 'trip_sylhet', memberId: 'm_karim', amountPoisha: bdtToPoisha(3500), paymentMethod: 'Mobile Banking', reference: 'SYL-02', note: 'bKash deposit', dateTime: '2026-09-10T07:10', createdAt: '2026-09-10T07:10:00+06:00' },
+        { id: 'c_8', tripId: 'trip_sylhet', memberId: 'm_hasan', amountPoisha: bdtToPoisha(3500), paymentMethod: 'Cash', reference: 'SYL-03', note: 'Cash deposit', dateTime: '2026-09-10T07:20', createdAt: '2026-09-10T07:20:00+06:00' },
+        { id: 'c_9', tripId: 'trip_sylhet', memberId: 'm_sakib', amountPoisha: bdtToPoisha(3500), paymentMethod: 'Bank', reference: 'SYL-04', note: 'Bank transfer', dateTime: '2026-09-10T07:30', createdAt: '2026-09-10T07:30:00+06:00' }
+      ];
+
+      const lunchParticipants = ['m_rahim', 'm_karim', 'm_hasan'];
+      const allFiveParticipants = ['m_rahim', 'm_karim', 'm_hasan', 'm_sakib', 'm_nabil'];
+      const sylhetAllFour = ['m_rahim', 'm_karim', 'm_hasan', 'm_sakib'];
+
+      const expenses = [
+        {
+          id: 'exp_cb_lunch',
+          tripId: 'trip_coxs_bazar',
+          title: 'Seafood Lunch at Poushee Restaurant',
+          amountPoisha: bdtToPoisha(1000),
+          category: 'Food',
+          paidByMemberId: 'm_rahim',
+          paymentSource: 'trip_fund',
+          participantIds: lunchParticipants,
+          allocations: calculateDeterministicSplit(bdtToPoisha(1000), lunchParticipants),
+          receiptNote: 'Receipt #POU-442',
+          notes: 'Only Rahim, Karim, and Hasan joined for lunch. Sakib and Nabil were resting.',
+          dateTime: '2026-10-26T14:15',
+          createdAt: '2026-10-26T14:15:00+06:00'
+        },
+        {
+          id: 'exp_cb_transport',
+          tripId: 'trip_coxs_bazar',
+          title: 'Marine Drive Chander Gari & Bus Transport',
+          amountPoisha: bdtToPoisha(2000),
+          category: 'Transport',
+          paidByMemberId: 'm_rahim',
+          paymentSource: 'trip_fund',
+          participantIds: allFiveParticipants,
+          allocations: calculateDeterministicSplit(bdtToPoisha(2000), allFiveParticipants),
+          receiptNote: 'Ticket #CG-889',
+          notes: 'Shared equally by all 5 trip members (৳400 each).',
+          dateTime: '2026-10-27T10:30',
+          createdAt: '2026-10-27T10:30:00+06:00'
+        },
+        {
+          id: 'exp_syl_hotel',
+          tripId: 'trip_sylhet',
+          title: 'Sreemangal Tea Resort Eco Cottage (2 Nights)',
+          amountPoisha: bdtToPoisha(8000),
+          category: 'Accommodation',
+          paidByMemberId: 'm_rahim',
+          paymentSource: 'trip_fund',
+          participantIds: sylhetAllFour,
+          allocations: calculateDeterministicSplit(bdtToPoisha(8000), sylhetAllFour),
+          receiptNote: 'Invoice #STR-209',
+          notes: 'Paid from collected trip fund.',
+          dateTime: '2026-09-11T12:00',
+          createdAt: '2026-09-11T12:00:00+06:00'
+        },
+        {
+          id: 'exp_syl_personal_dinner',
+          tripId: 'trip_sylhet',
+          title: 'Panshi Special BBQ Dinner (Paid Personally by Karim)',
+          amountPoisha: bdtToPoisha(1200),
+          category: 'Food',
+          paidByMemberId: 'm_karim',
+          paymentSource: 'personal',
+          participantIds: ['m_karim', 'm_hasan', 'm_sakib'],
+          allocations: calculateDeterministicSplit(bdtToPoisha(1200), ['m_karim', 'm_hasan', 'm_sakib']),
+          receiptNote: 'Personal Card Slip',
+          notes: 'Karim paid ৳1,200 out-of-pocket for Karim, Hasan, and Sakib (৳400 each). Does not reduce Trip Fund cash.',
+          dateTime: '2026-09-12T21:30',
+          createdAt: '2026-09-12T21:30:00+06:00'
+        }
+      ];
+
+      return {
+        members,
+        trips: [trip1, trip2],
+        contributions,
+        expenses,
+        settlements: [],
+        auditLogs: [
+          {
+            id: 'aud_1',
+            tripId: 'trip_coxs_bazar',
+            entityType: 'System',
+            action: 'TEST_SEED',
+            summary: "Initialized 5-member Cox's Bazar test scenario (৳10,000 collected, ৳1,000 3-member lunch, ৳2,000 5-member transport, ৳7,000 remaining cash).",
+            newAmountPoisha: bdtToPoisha(10000),
+            actorName: 'Rahim (Organizer)',
+            timestamp: '2026-10-25T09:05:00+06:00'
+          }
+        ],
+        settings: {
+          currencySymbol: '৳',
+          currencyCode: 'BDT',
+          language: 'en',
+          currentUserRole: 'Organizer',
+          currentUserName: 'Rahim',
+          customCategories: [],
+          googleScriptUrl: '',
+          autoSyncGoogleSheet: true,
+          lastSyncedAt: ''
+        }
+      };
+    }
+
+    // ============================================================================
+    // 4. MULTI-SHEET EXCEL (.XLS XML) & CSV EXPORT HELPERS
+    // ============================================================================
+
+    function generateMultiSheetExcelXml(trip, summary, expenses, contributions, members) {
+      const esc = (val) =>
+        String(val ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+
+      const memberName = (id) => members.find((m) => m.id === id)?.fullName || id;
+      const memberContact = (id) => members.find((m) => m.id === id)?.phoneOrEmail || '—';
+
+      const makeRow = (cells) =>
+        `<Row>${cells
+          .map(
+            (c) =>
+              `<Cell${c.bold ? ' ss:StyleID="sBold"' : ''}><Data ss:Type="${
+                c.type || (typeof c.val === 'number' ? 'Number' : 'String')
+              }">${esc(c.val)}</Data></Cell>`
+          )
+          .join('')}</Row>`;
+
+      const sortedExpenses = [...expenses].sort((a, b) => (a.dateTime || '').localeCompare(b.dateTime || ''));
+      const sortedContribs = [...contributions].sort((a, b) => (a.dateTime || '').localeCompare(b.dateTime || ''));
+      const tripMembersList = summary.memberFinancials.map((mf) => ({
+        id: mf.memberId,
+        name: mf.memberName
+      }));
+
+      // =========================================================================
+      // SHEET 1: A-Z TRIP SUMMARY & MEMBER MATRIX
+      // =========================================================================
+      const sheet1Rows = [
+        makeRow([{ val: 'TripMate — Complete A-to-Z Official Trip Financial Report', bold: true }]),
+        makeRow([{ val: 'Report Generated At (Asia/Dhaka)', bold: true }, { val: formatDhakaDateTime(new Date().toISOString()) }]),
+        makeRow([{ val: 'Trip Name', bold: true }, { val: trip.name }]),
+        makeRow([{ val: 'Destination (Where)', bold: true }, { val: trip.destination }]),
+        makeRow([{ val: 'Trip Duration (Dates)', bold: true }, { val: `${trip.startDate} to ${trip.endDate}` }]),
+        makeRow([{ val: 'Trip Status', bold: true }, { val: trip.status }]),
+        makeRow([{ val: 'Total Active Participants', bold: true }, { val: tripMembersList.length, type: 'Number' }]),
+        makeRow([{ val: '' }]),
+        makeRow([{ val: 'OVERALL FINANCIAL SUMMARY', bold: true }, { val: 'AMOUNT (BDT)', bold: true }, { val: 'DETAILS / EXPLANATION', bold: true }]),
+        makeRow([{ val: 'Expected Trip Budget' }, { val: poishaToBdt(trip.expectedBudgetPoisha), type: 'Number' }, { val: 'Planned target budget' }]),
+        makeRow([{ val: 'Total Money Deposited (Trip Fund)' }, { val: poishaToBdt(summary.totalCollectedPoisha), type: 'Number' }, { val: `Across ${sortedContribs.length} deposit transaction(s)` }]),
+        makeRow([{ val: 'Total Expenses Paid From Trip Fund' }, { val: poishaToBdt(summary.tripFundExpensesPoisha), type: 'Number' }, { val: 'Deducted from collected group cash' }]),
+        makeRow([{ val: 'Remaining Trip-Fund Cash in Hand', bold: true }, { val: poishaToBdt(summary.remainingFundCashPoisha), type: 'Number', bold: true }, { val: 'Total Deposited minus Trip-Fund Expenses', bold: true }]),
+        makeRow([{ val: 'Total Expenses Paid Personally (Out-of-Pocket)' }, { val: poishaToBdt(summary.personalExpensesPoisha), type: 'Number' }, { val: 'Paid personally by members (reimbursable)' }]),
+        makeRow([{ val: 'Grand Total Trip Expenses (Fund + Personal)', bold: true }, { val: poishaToBdt(summary.totalExpensesPoisha), type: 'Number', bold: true }, { val: `Across ${sortedExpenses.length} expense record(s)`, bold: true }]),
+        makeRow([{ val: '' }]),
+        makeRow([{ val: 'CATEGORY-WISE SPENDING BREAKDOWN', bold: true }, { val: 'TOTAL SPENT (BDT)', bold: true }, { val: 'NUMBER OF EXPENSES', bold: true }]),
+        ...summary.categoryBreakdown.map((cb) =>
+          makeRow([
+            { val: cb.category },
+            { val: poishaToBdt(cb.amountPoisha), type: 'Number' },
+            { val: cb.count, type: 'Number' }
+          ])
+        ),
+        makeRow([{ val: '' }]),
+        makeRow([
+          { val: 'PARTICIPANT NAME', bold: true },
+          { val: 'CONTACT INFO', bold: true },
+          { val: 'DEPOSITED TO FUND (BDT)', bold: true },
+          { val: 'PAID PERSONALLY (BDT)', bold: true },
+          { val: 'TOTAL CREDITED (BDT)', bold: true },
+          { val: 'TRIP-FUND EXPENSE SHARE (BDT)', bold: true },
+          { val: 'PERSONAL EXPENSE SHARE (BDT)', bold: true },
+          { val: 'TOTAL EXPENSE SHARE (BDT)', bold: true },
+          { val: 'EXPENSES JOINED', bold: true },
+          { val: 'NET BALANCE (BDT)', bold: true },
+          { val: 'FINAL STATUS', bold: true }
+        ]),
+        ...summary.memberFinancials.map((m) =>
+          makeRow([
+            { val: m.memberName, bold: true },
+            { val: memberContact(m.memberId) },
+            { val: poishaToBdt(m.contributedPoisha), type: 'Number' },
+            { val: poishaToBdt(m.paidPersonallyPoisha), type: 'Number' },
+            { val: poishaToBdt(m.totalCreditPoisha), type: 'Number' },
+            { val: poishaToBdt(m.allocatedTripFundExpensePoisha), type: 'Number' },
+            { val: poishaToBdt(m.allocatedPersonalExpensePoisha), type: 'Number' },
+            { val: poishaToBdt(m.totalAllocatedExpensePoisha), type: 'Number', bold: true },
+            { val: m.participatedExpenseCount, type: 'Number' },
+            { val: poishaToBdt(m.netBalancePoisha), type: 'Number', bold: true },
+            {
+              val:
+                m.netBalancePoisha > 0
+                  ? `Will Receive / Refund +৳${poishaToBdt(m.netBalancePoisha).toFixed(2)}`
+                  : m.netBalancePoisha < 0
+                  ? `Must Pay / Owes -৳${poishaToBdt(Math.abs(m.netBalancePoisha)).toFixed(2)}`
+                  : 'Settled (৳0.00)'
+            }
+          ])
+        )
+      ].join('\n');
+
+      // =========================================================================
+      // SHEET 2: A-Z DETAILED EXPENSES (WHEN, WHERE, WHAT, WHO PAID, PER-MEMBER COLUMNS)
+      // =========================================================================
+      const sheet2Header = makeRow([
+        { val: 'SL #', bold: true },
+        { val: 'Exact Date & Time (When)', bold: true },
+        { val: 'Trip & Destination (Where)', bold: true },
+        { val: 'Expense Title / What Was Bought', bold: true },
+        { val: 'Category', bold: true },
+        { val: 'Who Paid the Money', bold: true },
+        { val: 'Payment Source (Trip Fund vs Personal)', bold: true },
+        { val: 'Total Amount Spent (BDT)', bold: true },
+        { val: 'No. of Participants', bold: true },
+        { val: 'Who Participated (Included)', bold: true },
+        { val: 'Who Was Excluded (Paid 0 BDT)', bold: true },
+        { val: 'Individual Shares Summary', bold: true },
+        ...tripMembersList.map((tm) => ({ val: `${tm.name} Share (BDT)`, bold: true })),
+        { val: 'Notes / Details', bold: true }
+      ]);
+
+      const sheet2Rows = sortedExpenses
+        .map((e, idx) => {
+          const includedNames = (e.participantIds || []).map((id) => memberName(id)).join(', ');
+          const excludedNames = tripMembersList
+            .filter((tm) => !(e.participantIds || []).includes(tm.id))
+            .map((tm) => tm.name)
+            .join(', ') || 'None (All Joined)';
+
+          const perMemberCells = tripMembersList.map((tm) => {
+            const al = (e.allocations || []).find((a) => a.memberId === tm.id);
+            return { val: al ? poishaToBdt(al.sharePoisha) : 0, type: 'Number' };
+          });
+
+          return makeRow([
+            { val: idx + 1, type: 'Number' },
+            { val: formatDhakaDateTime(e.dateTime) },
+            { val: `${trip.name} (${trip.destination})` },
+            { val: e.title, bold: true },
+            { val: e.category },
+            { val: memberName(e.paidByMemberId), bold: true },
+            { val: e.paymentSource === 'trip_fund' ? 'Trip Fund (Group Cash)' : `Personally Paid by ${memberName(e.paidByMemberId)}` },
+            { val: poishaToBdt(e.amountPoisha), type: 'Number', bold: true },
+            { val: (e.participantIds || []).length, type: 'Number' },
+            { val: includedNames },
+            { val: excludedNames },
+            { val: (e.allocations || []).map((a) => `${memberName(a.memberId)}: ৳${poishaToBdt(a.sharePoisha).toFixed(2)}`).join(' | ') },
+            ...perMemberCells,
+            { val: e.notes || '—' }
+          ]);
+        })
+        .join('\n');
+
+      const sheet2TotalRow = makeRow([
+        { val: '' },
+        { val: 'TOTALS', bold: true },
+        { val: `${trip.name} (${trip.destination})` },
+        { val: `${sortedExpenses.length} Expense(s)`, bold: true },
+        { val: '' },
+        { val: '' },
+        { val: '' },
+        { val: poishaToBdt(summary.totalExpensesPoisha), type: 'Number', bold: true },
+        { val: '' },
+        { val: '' },
+        { val: '' },
+        { val: '' },
+        ...summary.memberFinancials.map((mf) => ({
+          val: poishaToBdt(mf.totalAllocatedExpensePoisha),
+          type: 'Number',
+          bold: true
+        })),
+        { val: '' }
+      ]);
+
+      // =========================================================================
+      // SHEET 3: FUND DEPOSITS (CONTRIBUTIONS — WHEN, WHO DEPOSITED, HOW MUCH, METHOD)
+      // =========================================================================
+      const sheet3Header = makeRow([
+        { val: 'SL #', bold: true },
+        { val: 'Exact Date & Time (When)', bold: true },
+        { val: 'Trip & Destination (Where)', bold: true },
+        { val: 'Member Name (Who Deposited)', bold: true },
+        { val: 'Contact Info', bold: true },
+        { val: 'Deposited Amount (BDT)', bold: true },
+        { val: 'Payment Method', bold: true },
+        { val: 'Transaction Reference / TrxID', bold: true },
+        { val: 'Note', bold: true }
+      ]);
+      const sheet3Rows = sortedContribs
+        .map((c, idx) =>
+          makeRow([
+            { val: idx + 1, type: 'Number' },
+            { val: formatDhakaDateTime(c.dateTime) },
+            { val: `${trip.name} (${trip.destination})` },
+            { val: memberName(c.memberId), bold: true },
+            { val: memberContact(c.memberId) },
+            { val: poishaToBdt(c.amountPoisha), type: 'Number', bold: true },
+            { val: c.paymentMethod },
+            { val: c.reference || '—' },
+            { val: c.note || '—' }
+          ])
+        )
+        .join('\n');
+      const sheet3TotalRow = makeRow([
+        { val: '' },
+        { val: 'TOTAL DEPOSITED', bold: true },
+        { val: '' },
+        { val: `${sortedContribs.length} Deposit(s)`, bold: true },
+        { val: '' },
+        { val: poishaToBdt(summary.totalCollectedPoisha), type: 'Number', bold: true },
+        { val: '' },
+        { val: '' },
+        { val: '' }
+      ]);
+
+      // =========================================================================
+      // SHEET 4: MEMBER-BY-MEMBER ITEMIZED PASSBOOK (EVERY PERSON'S A-Z HISTORY)
+      // =========================================================================
+      const sheet4Header = makeRow([
+        { val: 'Participant Name', bold: true },
+        { val: 'Record Type', bold: true },
+        { val: 'Date & Time (When)', bold: true },
+        { val: 'Location / Destination (Where)', bold: true },
+        { val: 'Description / What', bold: true },
+        { val: 'Category / Method', bold: true },
+        { val: 'Paid By / Source', bold: true },
+        { val: 'Total Bill Amount (BDT)', bold: true },
+        { val: 'Member Credit / Deposit (+BDT)', bold: true },
+        { val: 'Member Expense Share (-BDT)', bold: true },
+        { val: 'Running Member Net Balance (BDT)', bold: true }
+      ]);
+
+      const sheet4RowsList = [];
+      summary.memberFinancials.forEach((mf) => {
+        let runningPoisha = 0;
+        sheet4RowsList.push(
+          makeRow([
+            { val: `=== ${mf.memberName.toUpperCase()} ===`, bold: true },
+            { val: 'OPENING', bold: true },
+            { val: trip.startDate },
+            { val: trip.destination },
+            { val: `Passbook for ${mf.memberName}`, bold: true },
+            { val: '—' },
+            { val: '—' },
+            { val: 0, type: 'Number' },
+            { val: 0, type: 'Number' },
+            { val: 0, type: 'Number' },
+            { val: 0, type: 'Number', bold: true }
+          ])
+        );
+
+        sortedContribs
+          .filter((c) => c.memberId === mf.memberId)
+          .forEach((c) => {
+            runningPoisha += c.amountPoisha;
+            sheet4RowsList.push(
+              makeRow([
+                { val: mf.memberName },
+                { val: 'FUND DEPOSIT (+)' },
+                { val: formatDhakaDateTime(c.dateTime) },
+                { val: trip.destination },
+                { val: `Deposited into Trip Fund (${c.reference || 'No Ref'})` },
+                { val: c.paymentMethod },
+                { val: mf.memberName },
+                { val: poishaToBdt(c.amountPoisha), type: 'Number' },
+                { val: poishaToBdt(c.amountPoisha), type: 'Number', bold: true },
+                { val: 0, type: 'Number' },
+                { val: poishaToBdt(runningPoisha), type: 'Number', bold: true }
+              ])
+            );
+          });
+
+        sortedExpenses
+          .filter((e) => e.paymentSource === 'personal' && e.paidByMemberId === mf.memberId)
+          .forEach((e) => {
+            runningPoisha += e.amountPoisha;
+            sheet4RowsList.push(
+              makeRow([
+                { val: mf.memberName },
+                { val: 'PAID PERSONALLY (+)' },
+                { val: formatDhakaDateTime(e.dateTime) },
+                { val: trip.destination },
+                { val: `Paid out-of-pocket for: ${e.title}` },
+                { val: e.category },
+                { val: `Personally Paid by ${mf.memberName}` },
+                { val: poishaToBdt(e.amountPoisha), type: 'Number' },
+                { val: poishaToBdt(e.amountPoisha), type: 'Number', bold: true },
+                { val: 0, type: 'Number' },
+                { val: poishaToBdt(runningPoisha), type: 'Number', bold: true }
+              ])
+            );
+          });
+
+        sortedExpenses.forEach((e) => {
+          const alloc = (e.allocations || []).find((a) => a.memberId === mf.memberId);
+          const shareP = alloc ? alloc.sharePoisha : 0;
+          runningPoisha -= shareP;
+          sheet4RowsList.push(
+            makeRow([
+              { val: mf.memberName },
+              { val: shareP > 0 ? 'EXPENSE SHARE (-)' : 'EXCLUDED (0 BDT)' },
+              { val: formatDhakaDateTime(e.dateTime) },
+              { val: trip.destination },
+              { val: e.title },
+              { val: e.category },
+              { val: `${memberName(e.paidByMemberId)} (${e.paymentSource === 'trip_fund' ? 'Trip Fund' : 'Personal'})` },
+              { val: poishaToBdt(e.amountPoisha), type: 'Number' },
+              { val: 0, type: 'Number' },
+              { val: poishaToBdt(shareP), type: 'Number', bold: shareP > 0 },
+              { val: poishaToBdt(runningPoisha), type: 'Number', bold: true }
+            ])
+          );
+        });
+
+        sheet4RowsList.push(
+          makeRow([
+            { val: `${mf.memberName} CLOSING TOTAL`, bold: true },
+            { val: 'NET SUMMARY', bold: true },
+            { val: trip.endDate },
+            { val: trip.destination },
+            { val: `Final Net Balance for ${mf.memberName}`, bold: true },
+            { val: '—' },
+            { val: '—' },
+            { val: '' },
+            { val: poishaToBdt(mf.totalCreditPoisha), type: 'Number', bold: true },
+            { val: poishaToBdt(mf.totalAllocatedExpensePoisha), type: 'Number', bold: true },
+            { val: poishaToBdt(mf.netBalancePoisha), type: 'Number', bold: true }
+          ])
+        );
+        sheet4RowsList.push(makeRow([{ val: '' }]));
+      });
+
+      // =========================================================================
+      // SHEET 5: CHRONOLOGICAL CASHBOOK LEDGER (ALL INFLOWS & OUTFLOWS)
+      // =========================================================================
+      const ledgerEvents = [
+        ...sortedContribs.map((c) => ({
+          dateTime: c.dateTime || '',
+          type: 'FUND DEPOSIT (IN)',
+          title: `Deposit from ${memberName(c.memberId)}`,
+          categoryOrMethod: c.paymentMethod,
+          actor: memberName(c.memberId),
+          cashInPoisha: c.amountPoisha,
+          tripFundOutPoisha: 0,
+          personalOutPoisha: 0,
+          details: c.reference ? `Ref: ${c.reference}` : c.note || 'Added to Trip Fund'
+        })),
+        ...sortedExpenses.map((e) => ({
+          dateTime: e.dateTime || '',
+          type: e.paymentSource === 'trip_fund' ? 'TRIP-FUND EXPENSE (OUT)' : 'PERSONAL EXPENSE (OUT-OF-POCKET)',
+          title: e.title,
+          categoryOrMethod: e.category,
+          actor: memberName(e.paidByMemberId),
+          cashInPoisha: 0,
+          tripFundOutPoisha: e.paymentSource === 'trip_fund' ? e.amountPoisha : 0,
+          personalOutPoisha: e.paymentSource === 'personal' ? e.amountPoisha : 0,
+          details: `Split among ${(e.participantIds || []).length}: ${(e.allocations || [])
+            .map((a) => `${memberName(a.memberId)} (৳${poishaToBdt(a.sharePoisha).toFixed(2)})`)
+            .join(', ')}`
+        }))
+      ].sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+
+      let runningTripFundCash = 0;
+      const sheet5Header = makeRow([
+        { val: 'SL #', bold: true },
+        { val: 'Date & Time (When)', bold: true },
+        { val: 'Location (Where)', bold: true },
+        { val: 'Transaction Type', bold: true },
+        { val: 'Description / Purpose', bold: true },
+        { val: 'Category / Method', bold: true },
+        { val: 'Person Responsible (Who)', bold: true },
+        { val: 'Trip-Fund Cash In (+BDT)', bold: true },
+        { val: 'Trip-Fund Cash Out (-BDT)', bold: true },
+        { val: 'Personal Out-of-Pocket (BDT)', bold: true },
+        { val: 'Running Trip-Fund Cash Balance (BDT)', bold: true },
+        { val: 'Full Breakdown & Notes', bold: true }
+      ]);
+
+      const sheet5Rows = ledgerEvents
+        .map((ev, idx) => {
+          runningTripFundCash += ev.cashInPoisha - ev.tripFundOutPoisha;
+          return makeRow([
+            { val: idx + 1, type: 'Number' },
+            { val: formatDhakaDateTime(ev.dateTime) },
+            { val: `${trip.name} — ${trip.destination}` },
+            { val: ev.type, bold: true },
+            { val: ev.title, bold: true },
+            { val: ev.categoryOrMethod },
+            { val: ev.actor },
+            { val: poishaToBdt(ev.cashInPoisha), type: 'Number' },
+            { val: poishaToBdt(ev.tripFundOutPoisha), type: 'Number' },
+            { val: poishaToBdt(ev.personalOutPoisha), type: 'Number' },
+            { val: poishaToBdt(runningTripFundCash), type: 'Number', bold: true },
+            { val: ev.details }
+          ]);
+        })
+        .join('\n');
+
+      // =========================================================================
+      // SHEET 6: SETTLEMENT & REIMBURSEMENT PLAN
+      // =========================================================================
+      const sheet6Header = makeRow([
+        { val: 'Step #', bold: true },
+        { val: 'Settlement Category', bold: true },
+        { val: 'From (Who Pays)', bold: true },
+        { val: 'To (Who Receives)', bold: true },
+        { val: 'Exact Amount (BDT)', bold: true },
+        { val: 'Detailed Explanation', bold: true }
+      ]);
+      const allTransfers = [
+        ...summary.personalSettlementTransfers,
+        ...summary.finalTripSettlementTransfers
+      ];
+      const sheet6Rows = allTransfers
+        .map((t, idx) =>
+          makeRow([
+            { val: idx + 1, type: 'Number' },
+            { val: t.type === 'PERSONAL_REIMBURSEMENT' ? 'Out-of-Pocket Reimbursement' : 'Final Trip-Fund Settlement', bold: true },
+            { val: t.fromMemberName, bold: true },
+            { val: t.toMemberName, bold: true },
+            { val: poishaToBdt(t.amountPoisha), type: 'Number', bold: true },
+            { val: t.explanation }
+          ])
+        )
+        .join('\n');
+
+      return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles><Style ss:ID="sBold"><Font ss:Bold="1"/></Style></Styles>
+ <Worksheet ss:Name="1. A-Z Trip Summary"><Table>${sheet1Rows}</Table></Worksheet>
+ <Worksheet ss:Name="2. Detailed Expenses (A-Z)"><Table>${sheet2Header}${sheet2Rows}${sheet2TotalRow}</Table></Worksheet>
+ <Worksheet ss:Name="3. Fund Deposits"><Table>${sheet3Header}${sheet3Rows}${sheet3TotalRow}</Table></Worksheet>
+ <Worksheet ss:Name="4. Member Passbook (A-Z)"><Table>${sheet4Header}${sheet4RowsList.join('\n')}</Table></Worksheet>
+ <Worksheet ss:Name="5. Chronological Ledger"><Table>${sheet5Header}${sheet5Rows}</Table></Worksheet>
+ <Worksheet ss:Name="6. Final Settlement"><Table>${sheet6Header}${sheet6Rows}</Table></Worksheet>
+</Workbook>`;
+    }
+
+    function generateCompleteAzCsv(trip, summary, expenses, contributions, members) {
+      const memberName = (id) => members.find((m) => m.id === id)?.fullName || id;
+      const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const tripMembersList = summary.memberFinancials.map((mf) => ({
+        id: mf.memberId,
+        name: mf.memberName
+      }));
+
+      const lines = [];
+      lines.push([q('TRIPMATE COMPLETE A-TO-Z FINANCIAL REPORT'), q(trip.name), q(trip.destination), q(`${trip.startDate} to ${trip.endDate}`)].join(','));
+      lines.push('');
+
+      lines.push([q('SECTION 1: FINANCIAL SUMMARY'), q('AMOUNT (BDT)')].join(','));
+      lines.push([q('Total Deposited to Trip Fund'), poishaToBdt(summary.totalCollectedPoisha).toFixed(2)].join(','));
+      lines.push([q('Expenses Paid from Trip Fund'), poishaToBdt(summary.tripFundExpensesPoisha).toFixed(2)].join(','));
+      lines.push([q('Remaining Trip-Fund Cash'), poishaToBdt(summary.remainingFundCashPoisha).toFixed(2)].join(','));
+      lines.push([q('Expenses Paid Personally'), poishaToBdt(summary.personalExpensesPoisha).toFixed(2)].join(','));
+      lines.push([q('Grand Total Trip Expenses'), poishaToBdt(summary.totalExpensesPoisha).toFixed(2)].join(','));
+      lines.push('');
+
+      lines.push([
+        q('SECTION 2: DETAILED EXPENSES (WHEN, WHERE, WHO PAID, HOW MUCH)'),
+        q('Date & Time (When)'),
+        q('Location (Where)'),
+        q('Expense Title (What)'),
+        q('Category'),
+        q('Paid By (Who)'),
+        q('Payment Source'),
+        q('Total Amount (BDT)'),
+        q('Participants Included'),
+        q('Excluded Members (0 BDT)'),
+        ...tripMembersList.map((tm) => q(`${tm.name} Share (BDT)`)),
+        q('Notes')
+      ].join(','));
+
+      expenses.forEach((e, i) => {
+        const inc = (e.participantIds || []).map((id) => memberName(id)).join(' | ');
+        const exc = tripMembersList.filter((tm) => !(e.participantIds || []).includes(tm.id)).map((tm) => tm.name).join(' | ') || 'None';
+        const memberCols = tripMembersList.map((tm) => {
+          const al = (e.allocations || []).find((a) => a.memberId === tm.id);
+          return al ? poishaToBdt(al.sharePoisha).toFixed(2) : '0.00';
+        });
+        lines.push([
+          i + 1,
+          q(formatDhakaDateTime(e.dateTime)),
+          q(`${trip.name} - ${trip.destination}`),
+          q(e.title),
+          q(e.category),
+          q(memberName(e.paidByMemberId)),
+          q(e.paymentSource === 'trip_fund' ? 'Trip Fund' : 'Personally Paid'),
+          poishaToBdt(e.amountPoisha).toFixed(2),
+          q(inc),
+          q(exc),
+          ...memberCols,
+          q(e.notes || '')
+        ].join(','));
+      });
+      lines.push('');
+
+      lines.push([
+        q('SECTION 3: FUND DEPOSITS (WHEN, WHO DEPOSITED, HOW MUCH)'),
+        q('Date & Time (When)'),
+        q('Location (Where)'),
+        q('Member Name (Who)'),
+        q('Amount Deposited (BDT)'),
+        q('Payment Method'),
+        q('Reference / TrxID')
+      ].join(','));
+      contributions.forEach((c, i) => {
+        lines.push([
+          i + 1,
+          q(formatDhakaDateTime(c.dateTime)),
+          q(`${trip.name} - ${trip.destination}`),
+          q(memberName(c.memberId)),
+          poishaToBdt(c.amountPoisha).toFixed(2),
+          q(c.paymentMethod),
+          q(c.reference || '')
+        ].join(','));
+      });
+      lines.push('');
+
+      lines.push([
+        q('SECTION 4: MEMBER STANDINGS'),
+        q('Participant Name'),
+        q('Deposited (BDT)'),
+        q('Paid Personally (BDT)'),
+        q('Total Expense Share (BDT)'),
+        q('Net Balance (BDT)')
+      ].join(','));
+      summary.memberFinancials.forEach((m, i) => {
+        lines.push([
+          i + 1,
+          q(m.memberName),
+          poishaToBdt(m.contributedPoisha).toFixed(2),
+          poishaToBdt(m.paidPersonallyPoisha).toFixed(2),
+          poishaToBdt(m.totalAllocatedExpensePoisha).toFixed(2),
+          poishaToBdt(m.netBalancePoisha).toFixed(2)
+        ].join(','));
+      });
+
+      return lines.join('\n');
+    }
+
+    function triggerFileDownload(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    const GOOGLE_APPS_SCRIPT_CODE = `// Paste this inside Google Sheets -> Extensions -> Apps Script (Code.gs)
+// Deploy as Web App -> Execute as: "Me" -> Who has access: "Anyone"
+const SHEET_NAMES = {
+  STATE_STORE: 'TripMate_JSON_Store',
+  TRIPS: 'Trips',
+  MEMBERS: 'Members',
+  CONTRIBUTIONS: 'Contributions',
+  EXPENSES: 'Expenses',
+  MEMBER_SHARES: 'Member_Shares'
+};
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let s = ss.getSheetByName(SHEET_NAMES.STATE_STORE);
+  if (!s) return jsonOut({ status: 'empty' });
+  const raw = s.getRange('A2').getValue();
+  if (!raw) return jsonOut({ status: 'empty' });
+  return jsonOut({ status: 'ok', updatedAt: s.getRange('B2').getValue(), data: JSON.parse(raw) });
+}
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  Object.values(SHEET_NAMES).forEach(n => { if (!ss.getSheetByName(n)) ss.insertSheet(n); });
+  const body = JSON.parse(e.postData.contents);
+  const state = body.data;
+  const now = Utilities.formatDate(new Date(), 'Asia/Dhaka', 'yyyy-MM-dd HH:mm:ss');
+
+  const store = ss.getSheetByName(SHEET_NAMES.STATE_STORE);
+  store.getRange('A1:B1').setValues([['State_JSON', 'Last_Synced_Asia_Dhaka']]);
+  store.getRange('A2:B2').setValues([[JSON.stringify(state), now]]);
+
+  const memberMap = {};
+  const mSheet = ss.getSheetByName(SHEET_NAMES.MEMBERS);
+  mSheet.clearContents();
+  mSheet.appendRow(['Member ID', 'Full Name', 'Contact', 'Role', 'Status']);
+  (state.members || []).forEach(m => {
+    memberMap[m.id] = m.fullName;
+    mSheet.appendRow([m.id, m.fullName, m.phoneOrEmail || '', m.role, m.status]);
+  });
+
+  const tSheet = ss.getSheetByName(SHEET_NAMES.TRIPS);
+  tSheet.clearContents();
+  tSheet.appendRow(['Trip ID', 'Name', 'Destination', 'Start', 'End', 'Status', 'Budget (BDT)']);
+  (state.trips || []).forEach(t => {
+    tSheet.appendRow([t.id, t.name, t.destination, t.startDate, t.endDate, t.status, (t.expectedBudgetPoisha || 0)/100]);
+  });
+
+  const cSheet = ss.getSheetByName(SHEET_NAMES.CONTRIBUTIONS);
+  cSheet.clearContents();
+  cSheet.appendRow(['ID', 'Trip ID', 'Member', 'Amount (BDT)', 'Method', 'Ref', 'Date']);
+  (state.contributions || []).forEach(c => {
+    cSheet.appendRow([c.id, c.tripId, memberMap[c.memberId] || c.memberId, (c.amountPoisha || 0)/100, c.paymentMethod, c.reference || '', c.dateTime]);
+  });
+
+  const eSheet = ss.getSheetByName(SHEET_NAMES.EXPENSES);
+  const shSheet = ss.getSheetByName(SHEET_NAMES.MEMBER_SHARES);
+  eSheet.clearContents(); shSheet.clearContents();
+  eSheet.appendRow(['ID', 'Trip ID', 'Title', 'Category', 'Source', 'Paid By', 'Amount (BDT)', 'Shares Breakdown', 'Date']);
+  shSheet.appendRow(['Expense ID', 'Trip ID', 'Title', 'Member', 'Allocated Share (BDT)']);
+  (state.expenses || []).forEach(ex => {
+    const shares = (ex.allocations || []).map(a => (memberMap[a.memberId] || a.memberId) + ': ' + ((a.sharePoisha||0)/100).toFixed(2)).join(' | ');
+    eSheet.appendRow([ex.id, ex.tripId, ex.title, ex.category, ex.paymentSource, memberMap[ex.paidByMemberId] || ex.paidByMemberId, (ex.amountPoisha||0)/100, shares, ex.dateTime]);
+    (ex.allocations || []).forEach(a => {
+      shSheet.appendRow([ex.id, ex.tripId, ex.title, memberMap[a.memberId] || a.memberId, (a.sharePoisha||0)/100]);
+    });
+  });
+
+  return jsonOut({ status: 'ok', updatedAt: now });
+}
+
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+    // ============================================================================
+    // 5. STANDALONE ADD / EDIT EXPENSE COMPONENT (Top-Level so Inputs Never Lose Focus!)
+    //    Includes Inline Custom Participant Add / Edit Name / Delete Controls!
+    // ============================================================================
+
+    function AddExpenseSection({
+      state,
+      dashboardScope,
+      editingExpense,
+      setEditingExpense,
+      onSaveExpense,
+      onAddNewMemberInline,
+      onEditMemberModal,
+      onDeleteMemberGlobal,
+      sym
+    }) {
+      const initialTripId =
+        editingExpense?.tripId ||
+        (dashboardScope !== 'overall' && state.trips.some((t) => t.id === dashboardScope)
+          ? dashboardScope
+          : state.trips[0]?.id) ||
+        '';
+
+      const [tripId, setTripId] = useState(initialTripId);
+      const selectedTrip = state.trips.find((tr) => tr.id === tripId) || state.trips[0];
+
+      // Members currently assigned to this trip (or all members if trip has none)
+      const tripMembers = useMemo(() => {
+        if (!selectedTrip) return state.members;
+        const assigned = state.members.filter((m) => (selectedTrip.memberIds || []).includes(m.id));
+        return assigned.length > 0 ? assigned : state.members;
+      }, [selectedTrip, state.members]);
+
+      const [title, setTitle] = useState(editingExpense?.title || '');
+      const [amountBdt, setAmountBdt] = useState(
+        editingExpense ? String(poishaToBdt(editingExpense.amountPoisha)) : ''
+      );
+      const [category, setCategory] = useState(editingExpense?.category || 'Food');
+      const [paymentSource, setPaymentSource] = useState(editingExpense?.paymentSource || 'trip_fund');
+      const [paidByMemberId, setPaidByMemberId] = useState(
+        editingExpense?.paidByMemberId || tripMembers[0]?.id || ''
+      );
+      const [participantIds, setParticipantIds] = useState(
+        editingExpense?.participantIds || tripMembers.map((m) => m.id)
+      );
+      const [notes, setNotes] = useState(editingExpense?.notes || '');
+      const [dateTime, setDateTime] = useState(
+        editingExpense?.dateTime || getCurrentDhakaDateTimeInput()
+      );
+      const [quickMemberName, setQuickMemberName] = useState('');
+      const [error, setError] = useState('');
+
+      // Sync form when editingExpense changes
+      useEffect(() => {
+        if (editingExpense) {
+          setTripId(editingExpense.tripId);
+          setTitle(editingExpense.title);
+          setAmountBdt(String(poishaToBdt(editingExpense.amountPoisha)));
+          setCategory(editingExpense.category || 'Food');
+          setPaymentSource(editingExpense.paymentSource || 'trip_fund');
+          setPaidByMemberId(editingExpense.paidByMemberId);
+          setParticipantIds(editingExpense.participantIds || []);
+          setNotes(editingExpense.notes || '');
+          setDateTime(editingExpense.dateTime || getCurrentDhakaDateTimeInput());
+        }
+      }, [editingExpense]);
+
+      // Ensure paidByMemberId stays valid if members change
+      useEffect(() => {
+        if (tripMembers.length > 0 && !tripMembers.some((m) => m.id === paidByMemberId)) {
+          setPaidByMemberId(tripMembers[0].id);
+        }
+      }, [tripMembers, paidByMemberId]);
+
+      const totalPoisha = bdtToPoisha(amountBdt);
+      const orderedParticipantIds = tripMembers
+        .map((m) => m.id)
+        .filter((id) => participantIds.includes(id));
+
+      const liveAllocations = useMemo(
+        () => calculateDeterministicSplit(totalPoisha, orderedParticipantIds),
+        [totalPoisha, orderedParticipantIds]
+      );
+      const allocatedSumPoisha = liveAllocations.reduce((s, a) => s + a.sharePoisha, 0);
+
+      const toggleParticipant = (id) => {
+        setParticipantIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+      };
+
+      const handleQuickAddMember = () => {
+        const clean = quickMemberName.trim();
+        if (!clean) return;
+        const createdId = onAddNewMemberInline(clean, selectedTrip?.id);
+        if (createdId) {
+          setParticipantIds((prev) => [...prev, createdId]);
+          if (!paidByMemberId) setPaidByMemberId(createdId);
+          setQuickMemberName('');
+        }
+      };
+
+      const handleSave = (e) => {
+        e.preventDefault();
+        setError('');
+        if (!selectedTrip) return setError('Please create a trip first.');
+        if (!title.trim()) return setError('Please enter an expense title (e.g., Lunch, Bus Fare).');
+        if (totalPoisha <= 0) return setError('Expense amount must be greater than 0 BDT.');
+        if (orderedParticipantIds.length === 0) {
+          return setError('Please check at least 1 participant who shared this expense.');
+        }
+
+        const expRecord = {
+          id: editingExpense ? editingExpense.id : `exp_${Date.now()}`,
+          tripId: selectedTrip.id,
+          title: title.trim(),
+          amountPoisha: totalPoisha,
+          category,
+          paidByMemberId: paidByMemberId || tripMembers[0]?.id,
+          paymentSource,
+          participantIds: orderedParticipantIds,
+          allocations: liveAllocations,
+          notes: notes.trim(),
+          dateTime: dateTime || getCurrentDhakaDateTimeInput(),
+          createdAt: editingExpense ? editingExpense.createdAt : new Date().toISOString()
+        };
+
+        onSaveExpense(expRecord, Boolean(editingExpense));
+        if (!editingExpense) {
+          setTitle('');
+          setAmountBdt('');
+          setNotes('');
+        }
+      };
+
+      if (state.trips.length === 0) {
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center">
+            <p className="text-sm font-bold text-slate-700">No trips found. Please create a trip first!</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                {editingExpense ? `✏️ Edit Expense: ${editingExpense.title}` : '➕ Add Trip Expense'}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select who participated, or add/edit/delete participant names directly below!
+              </p>
+            </div>
+            {editingExpense && (
+              <button
+                type="button"
+                onClick={() => setEditingExpense(null)}
+                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel Edit
+              </button>
+            )}
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-4 mt-4">
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+                ⚠️ {error}
+              </div>
+            )}
+
+            {/* Quick Presets */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Quick Fill:</span>
+              {[
+                { label: '🍛 Lunch', title: 'Group Lunch', cat: 'Food' },
+                { label: '🚌 Bus / Auto', title: 'Transport Fare', cat: 'Transport' },
+                { label: '🏨 Hotel Rent', title: 'Hotel Room Rent', cat: 'Accommodation' },
+                { label: '🎟️ Tickets', title: 'Entry Tickets', cat: 'Tickets & Entry Fees' }
+              ].map((p) => (
+                <button
+                  type="button"
+                  key={p.label}
+                  onClick={() => {
+                    setTitle(p.title);
+                    setCategory(p.cat);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-semibold"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 1. Trip, 2. Title, 3. Amount */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">1. Select Trip *</label>
+                <select
+                  value={selectedTrip?.id || ''}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setTripId(nextId);
+                    const nt = state.trips.find((tr) => tr.id === nextId);
+                    if (nt) {
+                      setParticipantIds(nt.memberIds || []);
+                      setPaidByMemberId((nt.memberIds && nt.memberIds[0]) || '');
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white font-semibold"
+                >
+                  {state.trips.map((tr) => (
+                    <option key={tr.id} value={tr.id}>{tr.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">2. Expense Title *</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Lunch, Bus Fare, Hotel"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">3. Amount ({sym} BDT) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amountBdt}
+                  onChange={(e) => setAmountBdt(e.target.value)}
+                  placeholder="1000"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-base font-extrabold text-emerald-700"
+                />
+              </div>
+            </div>
+
+            {/* Payment Source, Paid By, Category, Date/Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Payment Source *</label>
+                <select
+                  value={paymentSource}
+                  onChange={(e) => setPaymentSource(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                >
+                  <option value="trip_fund">Trip Fund (Collected Cash)</option>
+                  <option value="personal">Personally Paid (Out-of-Pocket)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Paid By *</label>
+                <select
+                  value={paidByMemberId}
+                  onChange={(e) => setPaidByMemberId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                >
+                  {tripMembers.map((m) => (
+                    <option key={m.id} value={m.id}>{m.fullName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                >
+                  {DEFAULT_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={dateTime}
+                  onChange={(e) => setDateTime(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Participant Selector + Inline Customizer (Add / Rename / Delete Member) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-7 p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-slate-900">
+                      4. Select Participants ({orderedParticipantIds.length} of {tripMembers.length})
+                    </span>
+                    <p className="text-[11px] text-slate-500">
+                      Tap checkbox to include/exclude • Tap ✏️ to rename or 🗑️ to delete member
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setParticipantIds(tripMembers.map((m) => m.id))}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setParticipantIds([])}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline Add New Participant Bar */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={quickMemberName}
+                    onChange={(e) => setQuickMemberName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleQuickAddMember();
+                      }
+                    }}
+                    placeholder="Add new participant name (e.g., Tanvir)..."
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleQuickAddMember}
+                    className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0"
+                  >
+                    + Add Member
+                  </button>
+                </div>
+
+                {/* Participant Cards with Checkbox + Edit + Delete */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {tripMembers.map((m) => {
+                    const checked = participantIds.includes(m.id);
+                    const alloc = liveAllocations.find((a) => a.memberId === m.id);
+                    return (
+                      <div
+                        key={m.id}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${
+                          checked ? 'bg-emerald-50/80 border-emerald-500' : 'bg-slate-50 border-slate-200 opacity-75'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleParticipant(m.id)}
+                          className="flex items-center gap-2 text-left flex-1 min-w-0"
+                        >
+                          <span className="text-base leading-none">{checked ? '☑️' : '⬜'}</span>
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-slate-900 truncate">{m.fullName}</p>
+                            <p className="text-[11px] font-mono font-bold text-emerald-700">
+                              {formatCurrency(alloc ? alloc.sharePoisha : 0, sym, true)}
+                            </p>
+                          </div>
+                        </button>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => onEditMemberModal(m)}
+                            title="Edit Member Name"
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 text-xs"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteMemberGlobal(m)}
+                            title="Delete Member"
+                            className="p-1.5 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Live Split Preview Box */}
+              <div className="lg:col-span-5 p-4 rounded-xl bg-emerald-950 text-white flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                    Live Per-Person Split Preview
+                  </span>
+                  <div className="mt-3 space-y-1.5 text-xs max-h-52 overflow-y-auto pr-1">
+                    {tripMembers.map((m) => {
+                      const alloc = liveAllocations.find((a) => a.memberId === m.id);
+                      return (
+                        <div key={m.id} className="flex justify-between py-1 border-b border-emerald-900/60">
+                          <span className={alloc ? 'text-white font-semibold' : 'text-emerald-400/50'}>
+                            {m.fullName} {!alloc && '(Excluded)'}
+                          </span>
+                          <span className="font-mono font-bold">
+                            {formatCurrency(alloc ? alloc.sharePoisha : 0, sym, true)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-emerald-800 flex justify-between text-xs font-bold text-emerald-300">
+                  <span>Total Split Sum:</span>
+                  <span className="font-mono">{formatCurrency(allocatedSumPoisha, sym, true)} ✓</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Optional Note</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Any extra details about this expense..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-sm"
+              >
+                {editingExpense ? '💾 Update Expense & Recalculate' : '✅ Save Expense & Split Fairly'}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 6. MAIN APPLICATION COMPONENT
+    // ============================================================================
+
+    const STORAGE_KEY = 'tripmate_gh_sheets_v2';
+
+    function App() {
+      const [state, setState] = useState(() => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed.trips) && Array.isArray(parsed.members)) {
+              return parsed;
+            }
+          }
+        } catch (e) {}
+        return createInitialSeedState();
+      });
+
+      const [activeNav, setActiveNav] = useState('dashboard');
+      const [dashboardScope, setDashboardScope] = useState('trip_coxs_bazar');
+      const [selectedTripId, setSelectedTripId] = useState('trip_coxs_bazar');
+      const [toast, setToast] = useState(null);
+      const [confirmDialog, setConfirmDialog] = useState(null);
+      const [syncStatus, setSyncStatus] = useState('idle');
+
+      // Modals & Controlled Form States
+      const [tripModalOpen, setTripModalOpen] = useState(false);
+      const [editingTrip, setEditingTrip] = useState(null);
+      const [tripFormName, setTripFormName] = useState('');
+      const [tripFormDest, setTripFormDest] = useState('');
+      const [tripFormStart, setTripFormStart] = useState('2026-11-01');
+      const [tripFormEnd, setTripFormEnd] = useState('2026-11-05');
+      const [tripFormBudget, setTripFormBudget] = useState('12000');
+      const [tripFormStatus, setTripFormStatus] = useState('Ongoing');
+      const [tripFormMembers, setTripFormMembers] = useState([]);
+
+      // Deposit Fund (Contribution) Controlled Modal State
+      const [contributionModalOpen, setContributionModalOpen] = useState(false);
+      const [editingContribution, setEditingContribution] = useState(null);
+      const [contribTripId, setContribTripId] = useState('trip_coxs_bazar');
+      const [contribMemberId, setContribMemberId] = useState('m_rahim');
+      const [contribAmountBdt, setContribAmountBdt] = useState('');
+      const [contribMethod, setContribMethod] = useState('Cash');
+      const [contribRef, setContribRef] = useState('');
+      const [contribNote, setContribNote] = useState('');
+      const [contribDateTime, setContribDateTime] = useState(getCurrentDhakaDateTimeInput());
+
+      // Member Add / Edit Controlled Modal State
+      const [memberModalOpen, setMemberModalOpen] = useState(false);
+      const [editingMember, setEditingMember] = useState(null);
+      const [memberFormName, setMemberFormName] = useState('');
+      const [memberFormContact, setMemberFormContact] = useState('');
+      const [memberFormRole, setMemberFormRole] = useState('Member');
+
+      // Expense being edited
+      const [editingExpense, setEditingExpense] = useState(null);
+
+      // Google Sheets URL input state
+      const [scriptUrlInput, setScriptUrlInput] = useState(state.settings.googleScriptUrl || '');
+
+      const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => {
+          setToast((prev) => (prev?.message === message ? null : prev));
+        }, 3500);
+      };
+
+      useEffect(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {}
+      }, [state]);
+
+      // Push current state to Google Sheets Web App
+      const pushToGoogleSheets = async (customState = state, silent = false) => {
+        const url = customState.settings.googleScriptUrl?.trim();
+        if (!url) {
+          if (!silent) showToast('Please paste your Google Apps Script Web App URL first!', 'error');
+          return;
+        }
+        try {
+          setSyncStatus('syncing');
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'sync', data: customState })
+          });
+          const result = await response.json();
+          if (result.status === 'ok') {
+            setSyncStatus('synced');
+            setState((prev) => ({
+              ...prev,
+              settings: { ...prev.settings, lastSyncedAt: result.updatedAt || new Date().toLocaleTimeString() }
+            }));
+            if (!silent) showToast('Synced all trips & expenses to Google Sheets Database!');
+          } else {
+            setSyncStatus('error');
+            if (!silent) showToast('Google Sheets error: ' + (result.message || 'Unknown'), 'error');
+          }
+        } catch (err) {
+          setSyncStatus('error');
+          if (!silent) showToast('Could not reach Google Sheets URL. Check deployment permissions ("Anyone").', 'error');
+        }
+      };
+
+      const pullFromGoogleSheets = async () => {
+        const url = state.settings.googleScriptUrl?.trim();
+        if (!url) {
+          showToast('Please paste your Google Apps Script Web App URL first!', 'error');
+          return;
+        }
+        try {
+          setSyncStatus('syncing');
+          const response = await fetch(url);
+          const result = await response.json();
+          if (result.status === 'ok' && result.data) {
+            setState((prev) => ({
+              ...result.data,
+              settings: {
+                ...result.data.settings,
+                googleScriptUrl: url,
+                lastSyncedAt: result.updatedAt || new Date().toLocaleTimeString()
+              }
+            }));
+            setSyncStatus('synced');
+            showToast('Loaded latest data from Google Sheets Database!');
+          } else if (result.status === 'empty') {
+            setSyncStatus('idle');
+            showToast('Google Sheet is empty. Click "Push / Save to Google Sheet" to initialize!', 'info');
+          }
+        } catch (err) {
+          setSyncStatus('error');
+          showToast('Failed to fetch from Google Sheets URL.', 'error');
+        }
+      };
+
+      const updateStateAndSync = (updaterFn) => {
+        setState((prev) => {
+          const next = updaterFn(prev);
+          if (next.settings.googleScriptUrl && next.settings.autoSyncGoogleSheet) {
+            setTimeout(() => pushToGoogleSheets(next, true), 150);
+          }
+          return next;
+        });
+      };
+
+      // ============================================================================
+      // 7. HANDLERS FOR ALL 5 USER REQUIREMENTS
+      // ============================================================================
+
+      // 1. Open Create / Edit Trip Modal
+      const openCreateTripModal = () => {
+        setEditingTrip(null);
+        setTripFormName('');
+        setTripFormDest('');
+        setTripFormStart('2026-11-01');
+        setTripFormEnd('2026-11-05');
+        setTripFormBudget('12000');
+        setTripFormStatus('Ongoing');
+        setTripFormMembers(state.members.map((m) => m.id));
+        setTripModalOpen(true);
+      };
+
+      const openEditTripModal = (trip) => {
+        setEditingTrip(trip);
+        setTripFormName(trip.name);
+        setTripFormDest(trip.destination);
+        setTripFormStart(trip.startDate);
+        setTripFormEnd(trip.endDate);
+        setTripFormBudget(String(poishaToBdt(trip.expectedBudgetPoisha)));
+        setTripFormStatus(trip.status || 'Ongoing');
+        setTripFormMembers(trip.memberIds || state.members.map((m) => m.id));
+        setTripModalOpen(true);
+      };
+
+      const handleSaveTripModal = (e) => {
+        e.preventDefault();
+        const name = tripFormName.trim();
+        const dest = tripFormDest.trim();
+        if (!name || !dest) {
+          showToast('Please enter Trip Name and Destination!', 'error');
+          return;
+        }
+        const memberIdsToSave = tripFormMembers.length > 0 ? tripFormMembers : state.members.map((m) => m.id);
+
+        if (editingTrip) {
+          const updatedTrip = {
+            ...editingTrip,
+            name,
+            destination: dest,
+            startDate: tripFormStart,
+            endDate: tripFormEnd,
+            expectedBudgetPoisha: bdtToPoisha(tripFormBudget || '0'),
+            status: tripFormStatus,
+            memberIds: memberIdsToSave
+          };
+          updateStateAndSync((prev) => ({
+            ...prev,
+            trips: prev.trips.map((t) => (t.id === editingTrip.id ? updatedTrip : t))
+          }));
+          showToast(`Updated trip "${name}"!`);
+        } else {
+          const newTrip = {
+            id: `trip_${Date.now()}`,
+            name,
+            destination: dest,
+            startDate: tripFormStart,
+            endDate: tripFormEnd,
+            description: '',
+            memberIds: memberIdsToSave,
+            expectedBudgetPoisha: bdtToPoisha(tripFormBudget || '0'),
+            status: tripFormStatus,
+            createdAt: new Date().toISOString()
+          };
+          updateStateAndSync((prev) => ({
+            ...prev,
+            trips: [newTrip, ...prev.trips]
+          }));
+          setDashboardScope(newTrip.id);
+          setSelectedTripId(newTrip.id);
+          showToast(`Created trip "${name}"!`);
+        }
+        setTripModalOpen(false);
+        setEditingTrip(null);
+      };
+
+      const handleDeleteTrip = (trip) => {
+        setConfirmDialog({
+          title: `Delete Trip "${trip.name}"?`,
+          description: `Are you sure you want to permanently delete "${trip.name}" and all its expenses and fund deposits?`,
+          confirmLabel: 'Yes, Delete Trip',
+          onConfirm: () => {
+            updateStateAndSync((prev) => {
+              const remainingTrips = prev.trips.filter((t) => t.id !== trip.id);
+              const nextActiveId = remainingTrips[0]?.id || 'overall';
+              setDashboardScope(nextActiveId);
+              setSelectedTripId(remainingTrips[0]?.id || '');
+              return {
+                ...prev,
+                trips: remainingTrips,
+                expenses: prev.expenses.filter((e) => e.tripId !== trip.id),
+                contributions: prev.contributions.filter((c) => c.tripId !== trip.id)
+              };
+            });
+            setConfirmDialog(null);
+            showToast(`Deleted trip "${trip.name}".`, 'info');
+          }
+        });
+      };
+
+      // 2. Open Add / Edit Member (Participant) Modal & Delete Member
+      const openAddMemberModal = () => {
+        setEditingMember(null);
+        setMemberFormName('');
+        setMemberFormContact('');
+        setMemberFormRole('Member');
+        setMemberModalOpen(true);
+      };
+
+      const openEditMemberModal = (member) => {
+        setEditingMember(member);
+        setMemberFormName(member.fullName);
+        setMemberFormContact(member.phoneOrEmail || '');
+        setMemberFormRole(member.role || 'Member');
+        setMemberModalOpen(true);
+      };
+
+      const handleSaveMemberModal = (e) => {
+        e.preventDefault();
+        const cleanName = memberFormName.trim();
+        if (!cleanName) {
+          showToast('Please enter participant name!', 'error');
+          return;
+        }
+        if (editingMember) {
+          updateStateAndSync((prev) => ({
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === editingMember.id
+                ? { ...m, fullName: cleanName, phoneOrEmail: memberFormContact.trim(), role: memberFormRole }
+                : m
+            )
+          }));
+          showToast(`Renamed/updated participant "${cleanName}"!`);
+        } else {
+          const newId = `m_${Date.now()}`;
+          const newM = {
+            id: newId,
+            fullName: cleanName,
+            phoneOrEmail: memberFormContact.trim(),
+            avatarColor: AVATAR_COLORS[state.members.length % AVATAR_COLORS.length],
+            status: 'Active',
+            role: memberFormRole,
+            createdAt: new Date().toISOString()
+          };
+          updateStateAndSync((prev) => ({
+            ...prev,
+            members: [...prev.members, newM],
+            trips: prev.trips.map((tr) => ({
+              ...tr,
+              memberIds: [...(tr.memberIds || []), newId]
+            }))
+          }));
+          showToast(`Added participant "${cleanName}"!`);
+        }
+        setMemberModalOpen(false);
+        setEditingMember(null);
+      };
+
+      // Inline quick add member from inside Add Expense
+      const handleAddNewMemberInline = (nameStr, targetTripId) => {
+        const cleanName = nameStr.trim();
+        if (!cleanName) return null;
+        const newId = `m_${Date.now()}`;
+        const newM = {
+          id: newId,
+          fullName: cleanName,
+          phoneOrEmail: '',
+          avatarColor: AVATAR_COLORS[state.members.length % AVATAR_COLORS.length],
+          status: 'Active',
+          role: 'Member',
+          createdAt: new Date().toISOString()
+        };
+        updateStateAndSync((prev) => ({
+          ...prev,
+          members: [...prev.members, newM],
+          trips: prev.trips.map((tr) =>
+            !targetTripId || tr.id === targetTripId
+              ? { ...tr, memberIds: [...(tr.memberIds || []), newId] }
+              : tr
+          )
+        }));
+        showToast(`Added participant "${cleanName}"!`);
+        return newId;
+      };
+
+      const handleDeleteMemberGlobal = (member) => {
+        if (state.members.length <= 1) {
+          showToast('At least 1 member must remain in the group!', 'error');
+          return;
+        }
+        setConfirmDialog({
+          title: `Delete Participant "${member.fullName}"?`,
+          description: `Removing "${member.fullName}" will remove them from all trips and recalculate any shared expenses among the remaining participants.`,
+          confirmLabel: 'Delete Participant',
+          onConfirm: () => {
+            updateStateAndSync((prev) => {
+              const remainingMembers = prev.members.filter((m) => m.id !== member.id);
+              const fallbackMemberId = remainingMembers[0]?.id || '';
+              return {
+                ...prev,
+                members: remainingMembers,
+                trips: prev.trips.map((tr) => ({
+                  ...tr,
+                  memberIds: (tr.memberIds || []).filter((id) => id !== member.id)
+                })),
+                contributions: prev.contributions.filter((c) => c.memberId !== member.id),
+                expenses: prev.expenses
+                  .map((ex) => {
+                    const nextParticipants = (ex.participantIds || []).filter((id) => id !== member.id);
+                    const finalParticipants =
+                      nextParticipants.length > 0
+                        ? nextParticipants
+                        : fallbackMemberId
+                        ? [fallbackMemberId]
+                        : [];
+                    return {
+                      ...ex,
+                      paidByMemberId:
+                        ex.paidByMemberId === member.id ? fallbackMemberId : ex.paidByMemberId,
+                      participantIds: finalParticipants,
+                      allocations: calculateDeterministicSplit(ex.amountPoisha, finalParticipants)
+                    };
+                  })
+              };
+            });
+            setConfirmDialog(null);
+            showToast(`Deleted participant "${member.fullName}".`, 'info');
+          }
+        });
+      };
+
+      // 3. Deposit Fund (Add / Edit Contribution) Controlled Modal Handlers
+      const openDepositModal = (defaultTId, contribToEdit = null) => {
+        const targetTripId =
+          contribToEdit?.tripId ||
+          (defaultTId && defaultTId !== 'overall' ? defaultTId : state.trips[0]?.id) ||
+          '';
+        const targetTrip = state.trips.find((t) => t.id === targetTripId) || state.trips[0];
+        const firstMemberId =
+          contribToEdit?.memberId ||
+          (targetTrip?.memberIds && targetTrip.memberIds[0]) ||
+          state.members[0]?.id ||
+          '';
+
+        setEditingContribution(contribToEdit);
+        setContribTripId(targetTrip?.id || '');
+        setContribMemberId(firstMemberId);
+        setContribAmountBdt(contribToEdit ? String(poishaToBdt(contribToEdit.amountPoisha)) : '');
+        setContribMethod(contribToEdit?.paymentMethod || 'Cash');
+        setContribRef(contribToEdit?.reference || '');
+        setContribNote(contribToEdit?.note || '');
+        setContribDateTime(contribToEdit?.dateTime || getCurrentDhakaDateTimeInput());
+        setContributionModalOpen(true);
+      };
+
+      const handleSaveContributionModal = (e) => {
+        e.preventDefault();
+        const amtPoisha = bdtToPoisha(contribAmountBdt);
+        if (!contribTripId) {
+          showToast('Please select a trip first!', 'error');
+          return;
+        }
+        if (!contribMemberId) {
+          showToast('Please select a member!', 'error');
+          return;
+        }
+        if (amtPoisha <= 0) {
+          showToast('Deposit amount must be greater than 0 BDT!', 'error');
+          return;
+        }
+        const memberObj = state.members.find((m) => m.id === contribMemberId);
+
+        if (editingContribution) {
+          const updatedC = {
+            ...editingContribution,
+            tripId: contribTripId,
+            memberId: contribMemberId,
+            amountPoisha: amtPoisha,
+            paymentMethod: contribMethod,
+            reference: contribRef.trim(),
+            note: contribNote.trim(),
+            dateTime: contribDateTime || getCurrentDhakaDateTimeInput()
+          };
+          updateStateAndSync((prev) => ({
+            ...prev,
+            contributions: prev.contributions.map((c) =>
+              c.id === editingContribution.id ? updatedC : c
+            )
+          }));
+          showToast(`Updated ${memberObj?.fullName}'s deposit to ${formatCurrency(amtPoisha, sym, true)}!`);
+        } else {
+          const newC = {
+            id: `c_${Date.now()}`,
+            tripId: contribTripId,
+            memberId: contribMemberId,
+            amountPoisha: amtPoisha,
+            paymentMethod: contribMethod,
+            reference: contribRef.trim(),
+            note: contribNote.trim(),
+            dateTime: contribDateTime || getCurrentDhakaDateTimeInput(),
+            createdAt: new Date().toISOString()
+          };
+          updateStateAndSync((prev) => ({
+            ...prev,
+            contributions: [newC, ...prev.contributions]
+          }));
+          showToast(`Deposited ${formatCurrency(amtPoisha, sym, true)} from ${memberObj?.fullName}!`);
+        }
+        setContributionModalOpen(false);
+        setEditingContribution(null);
+      };
+
+      // 4. Save Expense Handler
+      const handleSaveExpenseRecord = (expRecord, isEdit) => {
+        updateStateAndSync((prev) => ({
+          ...prev,
+          expenses: isEdit
+            ? prev.expenses.map((ex) => (ex.id === expRecord.id ? expRecord : ex))
+            : [expRecord, ...prev.expenses]
+        }));
+        setEditingExpense(null);
+        setDashboardScope(expRecord.tripId);
+        setSelectedTripId(expRecord.tripId);
+        showToast(
+          `${isEdit ? 'Updated' : 'Added'} expense "${expRecord.title}" (${formatCurrency(
+            expRecord.amountPoisha,
+            sym,
+            true
+          )})!`
+        );
+        setActiveNav('dashboard');
+      };
+
+      const handleDeleteExpense = (expense) => {
+        setConfirmDialog({
+          title: 'Delete Expense?',
+          description: `Delete "${expense.title}" (${formatCurrency(expense.amountPoisha, sym, true)})? All member shares and balances will recalculate immediately.`,
+          confirmLabel: 'Delete Expense',
+          onConfirm: () => {
+            updateStateAndSync((prev) => ({
+              ...prev,
+              expenses: prev.expenses.filter((e) => e.id !== expense.id)
+            }));
+            setConfirmDialog(null);
+            showToast(`Deleted "${expense.title}".`, 'info');
+          }
+        });
+      };
+
+      const handleDeleteContribution = (contrib) => {
+        const mName = state.members.find((m) => m.id === contrib.memberId)?.fullName || 'Member';
+        setConfirmDialog({
+          title: 'Delete Deposit?',
+          description: `Delete ${mName}'s deposit of ${formatCurrency(contrib.amountPoisha, sym, true)}?`,
+          confirmLabel: 'Delete Deposit',
+          onConfirm: () => {
+            updateStateAndSync((prev) => ({
+              ...prev,
+              contributions: prev.contributions.filter((c) => c.id !== contrib.id)
+            }));
+            setConfirmDialog(null);
+            showToast('Deleted deposit.', 'info');
+          }
+        });
+      };
+
+      const t = I18N[state.settings.language || 'en'];
+      const sym = state.settings.currencySymbol || '৳';
+
+      const tripSummaries = useMemo(() => {
+        const map = new Map();
+        state.trips.forEach((trip) => {
+          const tripContribs = state.contributions.filter((c) => c.tripId === trip.id);
+          const tripExps = state.expenses.filter((e) => e.tripId === trip.id);
+          map.set(trip.id, calculateTripFinancialSummary(trip, state.members, tripContribs, tripExps));
+        });
+        return map;
+      }, [state.trips, state.members, state.contributions, state.expenses]);
+
+      const overallMetrics = useMemo(() => {
+        let totalCollectedPoisha = 0;
+        let tripFundExpensesPoisha = 0;
+        let personalExpensesPoisha = 0;
+        let totalExpensesPoisha = 0;
+        let remainingFundCashPoisha = 0;
+        state.trips.forEach((trip) => {
+          const s = tripSummaries.get(trip.id);
+          if (!s) return;
+          totalCollectedPoisha += s.totalCollectedPoisha;
+          tripFundExpensesPoisha += s.tripFundExpensesPoisha;
+          personalExpensesPoisha += s.personalExpensesPoisha;
+          totalExpensesPoisha += s.totalExpensesPoisha;
+          remainingFundCashPoisha += s.remainingFundCashPoisha;
+        });
+        return {
+          totalCollectedPoisha,
+          tripFundExpensesPoisha,
+          personalExpensesPoisha,
+          totalExpensesPoisha,
+          remainingFundCashPoisha
+        };
+      }, [state.trips, tripSummaries]);
+
+      const isOverall = dashboardScope === 'overall';
+      const activeTrip = !isOverall
+        ? state.trips.find((tr) => tr.id === dashboardScope) || state.trips[0]
+        : state.trips.find((tr) => tr.id === selectedTripId) || state.trips[0];
+      const activeSummary = activeTrip ? tripSummaries.get(activeTrip.id) : null;
+
+      const totalCollected = isOverall ? overallMetrics.totalCollectedPoisha : activeSummary?.totalCollectedPoisha || 0;
+      const tripFundSpent = isOverall ? overallMetrics.tripFundExpensesPoisha : activeSummary?.tripFundExpensesPoisha || 0;
+      const personalSpent = isOverall ? overallMetrics.personalExpensesPoisha : activeSummary?.personalExpensesPoisha || 0;
+      const totalExpenses = isOverall ? overallMetrics.totalExpensesPoisha : activeSummary?.totalExpensesPoisha || 0;
+      const remainingCash = isOverall ? overallMetrics.remainingFundCashPoisha : activeSummary?.remainingFundCashPoisha || 0;
+
+      const navItems = [
+        { id: 'dashboard', icon: '📊', shortLabel: 'Home', label: t.dashboard },
+        { id: 'trips', icon: '🗺️', shortLabel: 'My Trips', label: t.myTrips },
+        { id: 'add_expense', icon: '➕', shortLabel: 'Add Expense', label: t.addExpense },
+        { id: 'members', icon: '👥', shortLabel: 'Members', label: t.members },
+        { id: 'reports', icon: '📥', shortLabel: 'Export', label: t.reportsExport },
+        { id: 'google_sheets', icon: '🟢', shortLabel: 'Sheets DB', label: t.googleSheetsDb }
+      ];
+
+      return (
+        <div className="min-h-screen flex flex-col md:flex-row">
+          {/* Desktop Sidebar */}
+          <aside className="hidden md:flex md:w-64 bg-white border-r border-slate-200 p-4 flex-col justify-between shrink-0">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center shadow-sm shrink-0">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                      <circle cx="12" cy="14" r="2.5" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-base font-extrabold text-slate-900 leading-none">{t.appName}</h1>
+                    <span className="text-[11px] text-slate-500">{t.tagline}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    setState((prev) => ({
+                      ...prev,
+                      settings: { ...prev.settings, language: prev.settings.language === 'en' ? 'bn' : 'en' }
+                    }))
+                  }
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-bold text-emerald-700"
+                >
+                  {state.settings.language === 'en' ? 'বাংলা' : 'EN'}
+                </button>
+              </div>
+
+              <nav className="mt-4 flex flex-col gap-1">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveNav(item.id)}
+                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 transition ${
+                      activeNav === item.id
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1.5 mt-6">
+              <div className="flex items-center justify-between font-bold text-slate-700">
+                <span>Database Mode:</span>
+                <span className="text-emerald-700">
+                  {state.settings.googleScriptUrl ? 'Google Sheets + Local' : 'Local + Sheets Ready'}
+                </span>
+              </div>
+              <p className="text-slate-500">Timezone: Asia/Dhaka (BST)</p>
+              <button
+                onClick={() => setActiveNav('google_sheets')}
+                className="w-full mt-1 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold hover:bg-emerald-100"
+              >
+                Configure Google Sheet
+              </button>
+            </div>
+          </aside>
+
+          {/* Mobile Sticky Top Header */}
+          <header className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-3.5 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center shadow-xs shrink-0">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  <circle cx="12" cy="14" r="2.5" fill="currentColor" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-sm font-extrabold text-slate-900 leading-none">{t.appName}</h1>
+                <span className="text-[10px] text-emerald-700 font-semibold">
+                  Cash Left: {formatCurrency(remainingCash, sym)}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => openDepositModal(activeTrip?.id)}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold"
+              >
+                + Deposit
+              </button>
+              <button
+                onClick={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    settings: { ...prev.settings, language: prev.settings.language === 'en' ? 'bn' : 'en' }
+                  }))
+                }
+                className="px-2 py-1.5 rounded-lg bg-slate-100 text-[11px] font-bold text-slate-700"
+              >
+                {state.settings.language === 'en' ? 'বাংলা' : 'EN'}
+              </button>
+            </div>
+          </header>
+
+          {/* Main Content Area */}
+          <main className="flex-1 p-3 sm:p-6 max-w-7xl mx-auto w-full space-y-4 sm:space-y-6">
+            {/* Top Scope & Quick Action Bar */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                <button
+                  onClick={() => setDashboardScope('overall')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${
+                    isOverall ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  🌐 All Trips ({state.trips.length})
+                </button>
+                {state.trips.map((tr) => (
+                  <button
+                    key={tr.id}
+                    onClick={() => {
+                      setDashboardScope(tr.id);
+                      setSelectedTripId(tr.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${
+                      dashboardScope === tr.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    📍 {tr.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 sm:flex items-center gap-2">
+                <button
+                  onClick={() => openDepositModal(activeTrip?.id)}
+                  className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold text-center"
+                >
+                  💰 {t.recordContribution}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingExpense(null);
+                    setActiveNav('add_expense');
+                  }}
+                  className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold text-center"
+                >
+                  ➕ {t.quickAddExpense}
+                </button>
+                <button
+                  onClick={openCreateTripModal}
+                  className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center"
+                >
+                  🗺️ {t.createTrip}
+                </button>
+              </div>
+            </div>
+
+            {/* Toast Notification */}
+            {toast && (
+              <div className="fixed bottom-16 md:bottom-5 right-4 left-4 sm:left-auto z-50 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg flex items-center justify-between gap-3">
+                <span>{toast.message}</span>
+                <button onClick={() => setToast(null)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+            )}
+
+            {/* VIEW 1: DASHBOARD */}
+            {activeNav === 'dashboard' && (
+              <div className="space-y-5">
+                {/* 4 KPI Summary Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200">
+                    <span className="text-[11px] font-bold uppercase text-slate-400 block">{t.totalCollected}</span>
+                    <p className="text-lg sm:text-2xl font-extrabold font-mono text-emerald-700 mt-1">
+                      {formatCurrency(totalCollected, sym, true)}
+                    </p>
+                    <button
+                      onClick={() => openDepositModal(activeTrip?.id)}
+                      className="mt-2 text-[11px] font-bold text-emerald-700 underline"
+                    >
+                      + Add Deposit Fund
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200">
+                    <span className="text-[11px] font-bold uppercase text-slate-400 block">Trip-Fund Spent</span>
+                    <p className="text-lg sm:text-2xl font-extrabold font-mono text-slate-900 mt-1">
+                      {formatCurrency(tripFundSpent, sym, true)}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Personal: {formatCurrency(personalSpent, sym)}
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border-2 border-emerald-500/40">
+                    <span className="text-[11px] font-bold uppercase text-emerald-800 block">{t.remainingCash}</span>
+                    <p className={`text-lg sm:text-2xl font-extrabold font-mono mt-1 ${remainingCash >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {formatCurrency(remainingCash, sym, true)}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">Collected − Fund Spent</p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200">
+                    <span className="text-[11px] font-bold uppercase text-slate-400 block">Total Expenses</span>
+                    <p className="text-lg sm:text-2xl font-extrabold font-mono text-slate-900 mt-1">
+                      {formatCurrency(totalExpenses, sym, true)}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">{state.members.length} Active Members</p>
+                  </div>
+                </div>
+
+                {/* Member Financial Matrix for Active Trip */}
+                {activeTrip && activeSummary && (
+                  <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+                    <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Member Accounting & Balances — {activeTrip.name}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Tap any member&apos;s ✏️ icon to edit their name or + Deposit to add money.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={openAddMemberModal}
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold"
+                        >
+                          + Add Member
+                        </button>
+                        <button
+                          onClick={() => {
+                            const xml = generateMultiSheetExcelXml(
+                              activeTrip,
+                              activeSummary,
+                              state.expenses.filter((e) => e.tripId === activeTrip.id),
+                              state.contributions.filter((c) => c.tripId === activeTrip.id),
+                              state.members
+                            );
+                            triggerFileDownload(`${activeTrip.name.replace(/[^a-z0-9]/gi, '_')}.xls`, xml, 'application/vnd.ms-excel');
+                            showToast('Downloaded 5-Sheet Excel Report!');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold"
+                        >
+                          📥 Excel
+                        </button>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                            <th className="py-3 px-3 sm:px-4">Participant</th>
+                            <th className="py-3 px-3 sm:px-4 text-right">Deposited</th>
+                            <th className="py-3 px-3 sm:px-4 text-right">Paid Personal</th>
+                            <th className="py-3 px-3 sm:px-4 text-right">Expense Share</th>
+                            <th className="py-3 px-3 sm:px-4 text-right">Net Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs">
+                          {activeSummary.memberFinancials.map((mf) => {
+                            const memberObj = state.members.find((m) => m.id === mf.memberId);
+                            return (
+                              <tr key={mf.memberId} className="hover:bg-slate-50">
+                                <td className="py-3 px-3 sm:px-4 font-bold text-slate-900">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{mf.memberName}</span>
+                                    {memberObj && (
+                                      <button
+                                        onClick={() => openEditMemberModal(memberObj)}
+                                        className="text-slate-400 hover:text-emerald-600 text-[11px]"
+                                        title="Edit Name"
+                                      >
+                                        ✏️
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 sm:px-4 text-right font-mono font-semibold text-emerald-700">
+                                  {formatCurrency(mf.contributedPoisha, sym, true)}
+                                </td>
+                                <td className="py-3 px-3 sm:px-4 text-right font-mono text-amber-700">
+                                  {formatCurrency(mf.paidPersonallyPoisha, sym, true)}
+                                </td>
+                                <td className="py-3 px-3 sm:px-4 text-right font-mono font-semibold text-slate-900">
+                                  {formatCurrency(mf.totalAllocatedExpensePoisha, sym, true)}
+                                </td>
+                                <td className={`py-3 px-3 sm:px-4 text-right font-mono font-bold ${mf.netBalancePoisha >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                                  {mf.netBalancePoisha >= 0 ? '+' : ''}{formatCurrency(mf.netBalancePoisha, sym, true)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expenses & Deposits Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  {/* Left: Expenses List */}
+                  <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Expenses & Participant Shares ({activeTrip?.name || 'All'})
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setEditingExpense(null);
+                          setActiveNav('add_expense');
+                        }}
+                        className="text-xs font-bold text-emerald-600 hover:underline"
+                      >
+                        + Add Expense
+                      </button>
+                    </div>
+                    {state.expenses.filter((e) => isOverall || e.tripId === activeTrip?.id).length === 0 ? (
+                      <p className="text-xs text-slate-400 py-4 text-center">No expenses recorded for this trip yet.</p>
+                    ) : (
+                      state.expenses
+                        .filter((e) => isOverall || e.tripId === activeTrip?.id)
+                        .map((exp) => {
+                          const payer = state.members.find((m) => m.id === exp.paidByMemberId);
+                          return (
+                            <div key={exp.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-sm font-bold text-slate-900">{exp.title}</span>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 font-semibold">
+                                      {exp.category}
+                                    </span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                      exp.paymentSource === 'trip_fund' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                    }`}>
+                                      {exp.paymentSource === 'trip_fund' ? 'Trip Fund' : `Paid by ${payer?.fullName || 'Member'}`}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm sm:text-base font-extrabold font-mono text-slate-900 mr-1">
+                                    {formatCurrency(exp.amountPoisha, sym, true)}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setEditingExpense(exp);
+                                      setActiveNav('add_expense');
+                                    }}
+                                    className="px-2 py-1 rounded-lg bg-white border border-slate-300 text-xs font-semibold hover:bg-slate-100"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteExpense(exp)}
+                                    className="px-2 py-1 rounded-lg bg-white border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {(exp.allocations || []).map((a) => {
+                                  const m = state.members.find((mem) => mem.id === a.memberId);
+                                  return (
+                                    <span key={a.memberId} className="px-2 py-0.5 rounded-md bg-white border border-emerald-200 text-[11px] font-mono text-emerald-900">
+                                      {m?.fullName || 'Member'}: <strong>{formatCurrency(a.sharePoisha, sym, true)}</strong>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+
+                  {/* Right: Deposit Fund (Contributions) History with Edit/Delete */}
+                  <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Deposited Funds ({activeTrip?.name || 'All'})
+                      </h3>
+                      <button
+                        onClick={() => openDepositModal(activeTrip?.id)}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold"
+                      >
+                        + Deposit Tk
+                      </button>
+                    </div>
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                      {state.contributions
+                        .filter((c) => isOverall || c.tripId === activeTrip?.id)
+                        .map((c) => {
+                          const m = state.members.find((mem) => mem.id === c.memberId);
+                          return (
+                            <div
+                              key={c.id}
+                              className="p-3 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between gap-2"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-900 truncate">
+                                  {m?.fullName || 'Member'}{' '}
+                                  <span className="font-normal text-slate-500">({c.paymentMethod})</span>
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  {c.dateTime?.replace('T', ' ')} {c.reference ? `• ${c.reference}` : ''}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="font-mono text-xs sm:text-sm font-extrabold text-emerald-700">
+                                  +{formatCurrency(c.amountPoisha, sym)}
+                                </span>
+                                <button
+                                  onClick={() => openDepositModal(c.tripId, c)}
+                                  className="p-1 rounded bg-white border border-slate-200 text-[11px]"
+                                  title="Edit Deposit"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteContribution(c)}
+                                  className="p-1 rounded bg-white border border-red-200 text-red-600 text-[11px]"
+                                  title="Delete Deposit"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 2: MY TRIPS (EDITABLE & DELETABLE TRIPS + SETTLEMENT) */}
+            {activeNav === 'trips' && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">My Trips (Edit or Delete Any Trip)</h2>
+                    <p className="text-xs text-slate-500">
+                      Click any trip card to view its Settlement & Reimbursements, or use ✏️ Edit / 🗑️ Delete.
+                    </p>
+                  </div>
+                  <button
+                    onClick={openCreateTripModal}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                  >
+                    + Create New Trip
+                  </button>
+                </div>
+
+                {/* Trip Cards with Edit & Delete */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {state.trips.map((tr) => {
+                    const s = tripSummaries.get(tr.id);
+                    const isSelected = activeTrip?.id === tr.id;
+                    return (
+                      <div
+                        key={tr.id}
+                        onClick={() => {
+                          setSelectedTripId(tr.id);
+                          setDashboardScope(tr.id);
+                        }}
+                        className={`cursor-pointer rounded-2xl p-4 sm:p-5 border transition ${
+                          isSelected
+                            ? 'bg-white border-emerald-600 ring-2 ring-emerald-500/20 shadow-md'
+                            : 'bg-white border-slate-200 hover:border-emerald-400'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase">
+                              {tr.status}
+                            </span>
+                            <h3 className="text-base font-bold text-slate-900 mt-1">{tr.name}</h3>
+                            <p className="text-xs text-slate-500">
+                              📍 {tr.destination} • {tr.startDate} to {tr.endDate}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => openEditTripModal(tr)}
+                              className="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTrip(tr)}
+                              className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-xs font-bold text-red-600"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block font-bold">Collected</span>
+                            <span className="font-mono font-bold text-emerald-700">
+                              {formatCurrency(s?.totalCollectedPoisha || 0, sym)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block font-bold">Total Spent</span>
+                            <span className="font-mono font-bold text-slate-900">
+                              {formatCurrency(s?.totalExpensesPoisha || 0, sym)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block font-bold">Cash Left</span>
+                            <span className="font-mono font-bold text-emerald-700">
+                              {formatCurrency(s?.remainingFundCashPoisha || 0, sym)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Settlement Summary for Selected Trip */}
+                {activeTrip && activeSummary && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          {activeTrip.name} — Settlement & Reimbursements
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Automatic calculation of who owes whom and remaining fund refunds
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => openEditTripModal(activeTrip)}
+                        className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold"
+                      >
+                        ✏️ Edit This Trip
+                      </button>
+                    </div>
+
+                    <h4 className="text-xs font-bold uppercase text-slate-500">
+                      A. Out-of-Pocket Personal Reimbursements
+                    </h4>
+                    {activeSummary.personalSettlementTransfers.length === 0 ? (
+                      <p className="text-xs text-slate-500">No personal out-of-pocket expenses pending reimbursement.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {activeSummary.personalSettlementTransfers.map((tr, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap justify-between gap-2 text-xs">
+                            <span><strong>{tr.fromMemberName}</strong> → <strong>{tr.toMemberName}</strong> ({tr.explanation})</span>
+                            <span className="font-mono font-bold text-amber-900">{formatCurrency(tr.amountPoisha, sym, true)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <h4 className="text-xs font-bold uppercase text-slate-500 pt-2">
+                      B. Final Trip-Fund Refunds / Balances
+                    </h4>
+                    <div className="space-y-2">
+                      {activeSummary.finalTripSettlementTransfers.map((tr, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-wrap justify-between gap-2 text-xs">
+                          <span><strong>{tr.fromMemberName}</strong> → <strong>{tr.toMemberName}</strong> ({tr.explanation})</span>
+                          <span className="font-mono font-bold text-emerald-800">{formatCurrency(tr.amountPoisha, sym, true)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW 3: ADD EXPENSE */}
+            {activeNav === 'add_expense' && (
+              <AddExpenseSection
+                state={state}
+                dashboardScope={dashboardScope}
+                editingExpense={editingExpense}
+                setEditingExpense={setEditingExpense}
+                onSaveExpense={handleSaveExpenseRecord}
+                onAddNewMemberInline={handleAddNewMemberInline}
+                onEditMemberModal={openEditMemberModal}
+                onDeleteMemberGlobal={handleDeleteMemberGlobal}
+                sym={sym}
+              />
+            )}
+
+            {/* VIEW 4: PARTICIPANTS / MEMBERS (CUSTOMIZE, EDIT NAME, ADD, DELETE) */}
+            {activeNav === 'members' && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">
+                      Participants / Members ({state.members.length})
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Customize participant names, add new friends, or delete participants anytime.
+                    </p>
+                  </div>
+                  <button
+                    onClick={openAddMemberModal}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                  >
+                    + Add New Participant
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {state.members.map((m) => (
+                    <div
+                      key={m.id}
+                      className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl ${m.avatarColor || 'bg-emerald-600'} text-white font-bold flex items-center justify-center shrink-0`}>
+                          {m.fullName.charAt(0)}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-sm font-bold text-slate-900 truncate">{m.fullName}</p>
+                          <p className="text-xs text-slate-500 truncate">{m.phoneOrEmail || m.role}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => openEditMemberModal(m)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMemberGlobal(m)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white border border-red-200 text-xs font-bold text-red-600 hover:bg-red-50"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 5: REPORTS & EXPORT */}
+            {activeNav === 'reports' && activeTrip && activeSummary && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5">
+                <div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                    Complete A-to-Z Audit & Financial Export
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
+                    Export Full A-to-Z Trip Report — {activeTrip.name}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Includes every single detail: exact date &amp; time (kokhon), destination/place (kothay), payer &amp; participants (ke), exact amount &amp; individual shares (koto tk byay korlo), member-by-member passbook, and chronological cashbook ledger.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <p className="font-bold text-slate-800 mb-1">📊 6 Worksheets Inside the Excel File:</p>
+                    <ul className="space-y-1 text-slate-600 list-disc list-inside">
+                      <li><strong>1. A-Z Trip Summary</strong> (Overview, Categories &amp; Member Matrix)</li>
+                      <li><strong>2. Detailed Expenses (A-Z)</strong> (When, Where, Who Paid, Per-Member Share Columns)</li>
+                      <li><strong>3. Fund Deposits</strong> (When, Who Deposited, Amount, Method &amp; Ref)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-800 mb-1">&nbsp;</p>
+                    <ul className="space-y-1 text-slate-600 list-disc list-inside">
+                      <li><strong>4. Member Passbook (A-Z)</strong> (Every Person&apos;s Individual Transaction History)</li>
+                      <li><strong>5. Chronological Ledger</strong> (Time-Ordered Cash In/Out &amp; Running Balance)</li>
+                      <li><strong>6. Final Settlement</strong> (Exact Who-Owes-Whom &amp; Fund Refunds)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => {
+                      const xml = generateMultiSheetExcelXml(
+                        activeTrip,
+                        activeSummary,
+                        state.expenses.filter((e) => e.tripId === activeTrip.id),
+                        state.contributions.filter((c) => c.tripId === activeTrip.id),
+                        state.members
+                      );
+                      triggerFileDownload(`${activeTrip.name.replace(/[^a-z0-9]/gi, '_')}_Full_AZ_Report.xls`, xml, 'application/vnd.ms-excel');
+                      showToast('Downloaded Complete 6-Sheet A-to-Z Excel Workbook!');
+                    }}
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm"
+                  >
+                    📥 Download Full 6-Sheet A-to-Z Excel Report (.xls)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const csv = generateCompleteAzCsv(
+                        activeTrip,
+                        activeSummary,
+                        state.expenses.filter((e) => e.tripId === activeTrip.id),
+                        state.contributions.filter((c) => c.tripId === activeTrip.id),
+                        state.members
+                      );
+                      triggerFileDownload(`${activeTrip.name.replace(/[^a-z0-9]/gi, '_')}_Full_AZ_Details.csv`, csv, 'text/csv;charset=utf-8;');
+                      showToast('Downloaded Complete A-to-Z CSV Report!');
+                    }}
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold"
+                  >
+                    📥 Download Complete A-to-Z Details (.csv)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 6: GOOGLE SHEETS DB */}
+            {activeNav === 'google_sheets' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                    <div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                        100% Free Serverless Cloud Database
+                      </span>
+                      <h2 className="text-lg sm:text-xl font-bold text-slate-900 mt-1">
+                        Connect Google Sheets as Your Live TripMate Database
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Every trip, customized member, deposit, and expense syncs directly to your Google Sheet.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => pushToGoogleSheets(state, false)}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs"
+                      >
+                        ⬆️ Push to Google Sheet
+                      </button>
+                      <button
+                        onClick={pullFromGoogleSheets}
+                        className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
+                      >
+                        ⬇️ Pull from Sheet
+                      </button>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      updateStateAndSync((prev) => ({
+                        ...prev,
+                        settings: { ...prev.settings, googleScriptUrl: scriptUrlInput.trim() }
+                      }));
+                      showToast('Saved Google Apps Script Web App URL!');
+                    }}
+                    className="space-y-3"
+                  >
+                    <label className="block text-xs font-bold text-slate-700">
+                      Your Google Apps Script Web App URL (ends with <code>/exec</code>)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        value={scriptUrlInput}
+                        onChange={(e) => setScriptUrlInput(e.target.value)}
+                        placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono"
+                      />
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold"
+                      >
+                        Save URL
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                      Google Apps Script Code (Code.gs)
+                    </h3>
+                    <button
+                      onClick={() => {
+                        try {
+                          navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
+                          showToast('Copied Code.gs to clipboard!');
+                        } catch {
+                          const ta = document.createElement('textarea');
+                          ta.value = GOOGLE_APPS_SCRIPT_CODE;
+                          document.body.appendChild(ta);
+                          ta.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(ta);
+                          showToast('Copied Code.gs to clipboard!');
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold"
+                    >
+                      📋 Copy Code.gs
+                    </button>
+                  </div>
+                  <pre className="p-3.5 rounded-xl bg-slate-900 text-emerald-300 text-[11px] font-mono overflow-x-auto max-h-60">
+                    {GOOGLE_APPS_SCRIPT_CODE}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Mobile Sticky Bottom Navigation Bar (Optimized for Phone Use) */}
+          <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 grid grid-cols-6 py-1 px-1 shadow-lg">
+            {navItems.map((item) => {
+              const active = activeNav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveNav(item.id)}
+                  className={`flex flex-col items-center justify-center py-1.5 rounded-xl transition ${
+                    active ? 'text-emerald-700 font-extrabold bg-emerald-50' : 'text-slate-500 font-medium'
+                  }`}
+                >
+                  <span className="text-base leading-none">{item.icon}</span>
+                  <span className="text-[10px] mt-1 truncate max-w-full px-0.5">{item.shortLabel}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* MODAL 1: DEPOSIT FUND (RECORD / EDIT CONTRIBUTION) — CONTROLLED & RELIABLE */}
+          {contributionModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {editingContribution ? '✏️ Edit Fund Deposit' : '💰 Deposit Money to Trip Fund'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContributionModalOpen(false);
+                      setEditingContribution(null);
+                    }}
+                    className="text-slate-400 hover:text-slate-700 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveContributionModal} className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Select Trip *</label>
+                    <select
+                      value={contribTripId}
+                      onChange={(e) => setContribTripId(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold"
+                    >
+                      {state.trips.map((tr) => (
+                        <option key={tr.id} value={tr.id}>{tr.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Select Participant / Member *</label>
+                    <select
+                      value={contribMemberId}
+                      onChange={(e) => setContribMemberId(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold"
+                    >
+                      {state.members.map((m) => (
+                        <option key={m.id} value={m.id}>{m.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Deposit Amount ({sym} BDT) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={contribAmountBdt}
+                      onChange={(e) => setContribAmountBdt(e.target.value)}
+                      placeholder="e.g., 2000"
+                      className="w-full p-3 border border-slate-300 rounded-xl text-base font-extrabold text-emerald-700"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">Payment Method</label>
+                      <select
+                        value={contribMethod}
+                        onChange={(e) => setContribMethod(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl bg-white"
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="Mobile Banking">bKash / Nagad</option>
+                        <option value="Bank">Bank Transfer</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">Date & Time</label>
+                      <input
+                        type="datetime-local"
+                        value={contribDateTime}
+                        onChange={(e) => setContribDateTime(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Reference / TrxID (Optional)</label>
+                    <input
+                      type="text"
+                      value={contribRef}
+                      onChange={(e) => setContribRef(e.target.value)}
+                      placeholder="e.g., bKash TrxID or Cash note"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setContributionModalOpen(false);
+                        setEditingContribution(null);
+                      }}
+                      className="px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm"
+                    >
+                      {editingContribution ? 'Update Deposit' : '✅ Save Deposit'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: CREATE / EDIT TRIP — CONTROLLED & EDITABLE */}
+          {tripModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-8">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {editingTrip ? `✏️ Edit Trip: ${editingTrip.name}` : '🗺️ Create New Trip'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTripModalOpen(false);
+                      setEditingTrip(null);
+                    }}
+                    className="text-slate-400 hover:text-slate-700 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveTripModal} className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Trip Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={tripFormName}
+                      onChange={(e) => setTripFormName(e.target.value)}
+                      placeholder="e.g., Sajek Valley Tour"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Destination *</label>
+                    <input
+                      type="text"
+                      required
+                      value={tripFormDest}
+                      onChange={(e) => setTripFormDest(e.target.value)}
+                      placeholder="e.g., Rangamati"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">Start Date</label>
+                      <input
+                        type="date"
+                        value={tripFormStart}
+                        onChange={(e) => setTripFormStart(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">End Date</label>
+                      <input
+                        type="date"
+                        value={tripFormEnd}
+                        onChange={(e) => setTripFormEnd(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">Expected Budget (BDT)</label>
+                      <input
+                        type="number"
+                        value={tripFormBudget}
+                        onChange={(e) => setTripFormBudget(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">Status</label>
+                      <select
+                        value={tripFormStatus}
+                        onChange={(e) => setTripFormStatus(e.target.value)}
+                        className="w-full p-2.5 border border-slate-300 rounded-xl bg-white"
+                      >
+                        <option value="Planned">Planned</option>
+                        <option value="Ongoing">Ongoing</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">
+                      Trip Participants ({tripFormMembers.length} selected)
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-2 border border-slate-200 rounded-xl bg-slate-50">
+                      {state.members.map((m) => {
+                        const checked = tripFormMembers.includes(m.id);
+                        return (
+                          <button
+                            type="button"
+                            key={m.id}
+                            onClick={() =>
+                              setTripFormMembers((prev) =>
+                                prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                              )
+                            }
+                            className={`p-2 rounded-lg text-left font-bold truncate ${
+                              checked ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700 border'
+                            }`}
+                          >
+                            {checked ? '✓ ' : '+ '} {m.fullName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTripModalOpen(false);
+                        setEditingTrip(null);
+                      }}
+                      className="px-4 py-2.5 border border-slate-300 rounded-xl font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold"
+                    >
+                      {editingTrip ? 'Save Trip Changes' : 'Create Trip'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 3: ADD / EDIT PARTICIPANT NAME — CONTROLLED */}
+          {memberModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {editingMember ? `✏️ Edit Participant: ${editingMember.fullName}` : '👤 Add New Participant'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMemberModalOpen(false);
+                      setEditingMember(null);
+                    }}
+                    className="text-slate-400 hover:text-slate-700 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveMemberModal} className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Participant Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={memberFormName}
+                      onChange={(e) => setMemberFormName(e.target.value)}
+                      placeholder="e.g., Tanvir Ahmed"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Phone / Email (Optional)</label>
+                    <input
+                      type="text"
+                      value={memberFormContact}
+                      onChange={(e) => setMemberFormContact(e.target.value)}
+                      placeholder="+8801..."
+                      className="w-full p-2.5 border border-slate-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold block mb-1 text-slate-700">Role</label>
+                    <select
+                      value={memberFormRole}
+                      onChange={(e) => setMemberFormRole(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-xl bg-white"
+                    >
+                      <option value="Organizer">Organizer</option>
+                      <option value="Member">Member</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMemberModalOpen(false);
+                        setEditingMember(null);
+                      }}
+                      className="px-4 py-2.5 border border-slate-300 rounded-xl font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold"
+                    >
+                      {editingMember ? 'Save Name' : 'Add Participant'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Confirmation Dialog */}
+          {confirmDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+                <h3 className="text-base font-bold text-slate-900">{confirmDialog.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{confirmDialog.description}</p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setConfirmDialog(null)}
+                    className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDialog.onConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
+                  >
+                    {confirmDialog.confirmLabel}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
