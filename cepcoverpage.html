@@ -70,7 +70,10 @@
         .logo-img { max-width: 530px; height: auto; }
         .doc-title { font-size: 16px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
 
-        .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
+        .course-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 8px; }
+        
+        /* Updated Topic alignment */
+        .course-topic { text-align: left; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         
         table.eval-table { 
             width: 100%; border-collapse: collapse; text-align: center; 
@@ -103,7 +106,6 @@
         }
 
         @media print {
-            /* 1. Hide scrollbars completely in print mode */
             ::-webkit-scrollbar {
                 display: none !important;
             }
@@ -112,8 +114,8 @@
                 background: white !important; 
                 margin: 0 !important; 
                 padding: 0 !important; 
-                height: auto !important; /* Removes 100vh constraint */
-                overflow: hidden !important; /* Forces scrollbars to disappear */
+                height: auto !important;
+                overflow: hidden !important;
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important;
             }
@@ -124,7 +126,7 @@
                 padding: 0 !important; 
                 margin: 0 !important; 
                 display: block !important; 
-                overflow: hidden !important; /* Removes preview area scrollbars */
+                overflow: hidden !important;
                 height: auto !important;
             }
             
@@ -145,32 +147,31 @@
         /* ========================================= */
         @media screen and (max-width: 900px) {
             body {
-                flex-direction: column; /* পাশাপাশি না রেখে উপরে-নিচে দেখাবে */
-                overflow-y: auto; /* পুরো পেজ স্ক্রল করা যাবে */
+                flex-direction: column;
+                overflow-y: auto;
                 height: auto;
             }
             .sidebar {
-                width: 100%; /* সাইডবার পুরো স্ক্রিন জুড়ে থাকবে */
+                width: 100%;
                 box-sizing: border-box;
                 border-bottom: 2px solid #ccc;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             }
             .preview-area {
                 padding: 20px 10px;
-                overflow-x: auto; /* A4 পেজ বড় হলে ডানে-বামে স্ক্রল করা যাবে */
+                overflow-x: auto;
                 justify-content: flex-start;
             }
-            /* ছোট স্ক্রিনে A4 পেজটিকে একটু জুম-আউট করে দেখানোর জন্য */
             .a4-page {
                 transform: scale(0.8);
                 transform-origin: top center;
-                margin-bottom: -60mm; /* জুম আউটের কারণে নিচের ফাঁকা জায়গা কমানো */
+                margin-bottom: -60mm;
             }
         }
 
         @media screen and (max-width: 500px) {
             .a4-page {
-                transform: scale(0.45); /* ফোনের স্ক্রিনের জন্য আরও জুম-আউট */
+                transform: scale(0.45);
                 margin-bottom: -150mm;
             }
         }
@@ -188,6 +189,11 @@
         <div class="form-group">
             <label>Course Code</label>
             <input type="text" id="in-courseCode" value="0723-219" oninput="updateView()">
+        </div>
+        <!-- Title/Topic Section Added Here -->
+        <div class="form-group">
+            <label>Title/Topic</label>
+            <input type="text" id="in-topicTitle" value="Write your assignment topic here" oninput="updateView()">
         </div>
         <div class="form-group">
             <label>Course Title</label>
@@ -242,6 +248,11 @@
             <div class="course-info">
                 <div>Course Code: <span id="out-courseCode">0723-219</span></div>
                 <div>Course Title: <span id="out-courseTitle">Apparel Manufacturing 1</span></div>
+            </div>
+            
+            <!-- Title/Topic Preview Aligned under Course Code -->
+            <div class="course-topic">
+                Topic: <span id="out-topicTitle" style="font-weight: normal;">Write your assignment topic here</span>
             </div>
 
             <!-- Evaluation Table -->
@@ -313,7 +324,7 @@
     <script>
         function updateView() {
             const fields = [
-                'docType', 'courseCode', 'courseTitle', 'semester', 
+                'docType', 'courseCode', 'topicTitle', 'courseTitle', 'semester', 
                 'year', 'levelTerm', 'section', 'studentName', 
                 'studentID', 'teacherName', 'teacherDesig'
             ];
