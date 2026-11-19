@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     :root {
       --bg-app: #f4f6f9;
@@ -1843,6 +1844,34 @@
                         </button>
                       </div>
                     </div>
+
+                    <div style="padding:14px;border:1px solid #bfdbfe;border-radius:10px;background:var(--accent-soft);display:flex;flex-direction:column;gap:10px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                        <div>
+                          <strong>Google Sheets Detailed Storage &amp; Cloud Backup</strong>
+                          <div class="form-hint">Stores Products, Invoices, Warranties, Customers, Stock History &amp; Full Backup in Google Sheets</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary" id="gsheet-setup-btn">
+                          <span data-icon="settings"></span> Apps Script Setup
+                        </button>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="gsheet-url-input">Google Apps Script Web App URL</label>
+                        <input type="url" class="form-control" id="gsheet-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
+                      </div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="btn btn-sm btn-primary" id="gsheet-sync-btn">
+                          <span data-icon="upload"></span> Sync Detailed Data to Google Sheets
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="gsheet-restore-btn">
+                          <span data-icon="download"></span> Restore Backup from Google Sheets
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="gsheet-csv-btn">
+                          <span data-icon="download"></span> Export Google Sheets CSV
+                        </button>
+                      </div>
+                      <div class="form-hint" id="gsheet-sync-status">Not synced yet. Click "Apps Script Setup" for 1-minute Google Sheets connection.</div>
+                    </div>
                   </div>
 
                   <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -2008,6 +2037,9 @@
           <button class="btn btn-dark btn-sm" id="btn-save-pdf-invoice">
             <span data-icon="download"></span> Save as PDF
           </button>
+          <button class="btn btn-success btn-sm" id="btn-save-jpg-invoice">
+            <span data-icon="download"></span> Save as JPG
+          </button>
           <button class="btn-icon" data-close-modal="modal-invoice-view" aria-label="Close">✕</button>
         </div>
       </div>
@@ -2088,6 +2120,32 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">Cancel</button>
         <button type="button" class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GOOGLE SHEETS APPS SCRIPT SETUP -->
+  <div class="modal-backdrop" id="modal-gsheet-setup">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>Connect Google Sheets (Detailed Storage &amp; Cloud Backup)</h3>
+        <button class="btn-icon" data-close-modal="modal-gsheet-setup" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <ol style="padding-left:18px;margin-bottom:14px;color:var(--text-secondary);display:flex;flex-direction:column;gap:6px;font-size:13px;">
+          <li>Open a new spreadsheet at <strong>sheets.google.com</strong> (e.g., name it <em>StockFlow Pro Backup</em>).</li>
+          <li>Click <strong>Extensions → Apps Script</strong>, delete any existing code, and paste the script below.</li>
+          <li>Click <strong>Deploy → New deployment → Web app</strong>, set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>, then click <strong>Deploy</strong>.</li>
+          <li>Copy the generated <strong>Web App URL</strong> (ends with <code>/exec</code>), paste it in Settings, and click <strong>Sync Detailed Data to Google Sheets</strong>.</li>
+        </ol>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <strong style="font-size:13px;">Google Apps Script (Code.gs)</strong>
+          <button type="button" class="btn btn-sm btn-primary" id="copy-apps-script-btn">Copy Script Code</button>
+        </div>
+        <textarea id="gsheet-apps-script-code" class="form-control" rows="13" readonly style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--bg-subtle);"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal="modal-gsheet-setup">Close</button>
       </div>
     </div>
   </div>
@@ -2348,7 +2406,9 @@
       defaultWarrantyTerms: 'Covers manufacturing defects only. Physical or water damage excluded. Original invoice required.',
       footerMessage: 'Thank you for your business! Please keep this invoice for warranty claims.',
       logoDataUrl: '',
-      theme: 'navy'
+      theme: 'navy',
+      googleSheetWebhookUrl: '',
+      lastGoogleSheetSync: ''
     };
 
     function todayISO() {
@@ -3859,6 +3919,33 @@
       }, 150);
     }
 
+    async function saveCurrentInvoiceAsJpg() {
+      const inv = state.invoices.find(i => i.id === currentPreviewInvoiceId);
+      const sheet = document.querySelector('#invoice-preview-container .invoice-sheet');
+      if (!inv || !sheet) return;
+      if (typeof window.html2canvas !== 'function') {
+        return showToast('JPG export requires internet to load html2canvas.', 'error');
+      }
+      try {
+        showToast('Generating JPG image...', 'info');
+        const canvas = await window.html2canvas(sheet, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false
+        });
+        const link = document.createElement('a');
+        link.download = `${inv.invoiceNumber}-${(inv.customerName || 'Invoice').replace(/[^a-z0-9]/gi, '_')}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast(`Saved ${inv.invoiceNumber} as JPG.`);
+      } catch (err) {
+        showToast('Could not generate JPG image.', 'error');
+      }
+    }
+
     /* =========================================================================
        11. INVOICE HISTORY, PAYMENTS, CANCELLATION & STOCK RESTORATION
        ========================================================================= */
@@ -4266,6 +4353,11 @@
       const bytes = new Blob([JSON.stringify(state)]).size;
       document.getElementById('storage-stats-text').textContent =
         `${state.products.length} products · ${state.invoices.length} invoices · ${state.customers.length} customers (${(bytes / 1024).toFixed(1)} KB stored)`;
+
+      document.getElementById('gsheet-url-input').value = s.googleSheetWebhookUrl || '';
+      document.getElementById('gsheet-sync-status').textContent = s.lastGoogleSheetSync
+        ? `Last synced to Google Sheets: ${fmtDateTime(s.lastGoogleSheetSync)}`
+        : 'Not synced yet. Click "Apps Script Setup" for 1-minute Google Sheets connection.';
     }
 
     function updateSettingsQrPreview(url) {
@@ -4354,6 +4446,278 @@
         }
       };
       reader.readAsText(file);
+    }
+
+    const GOOGLE_APPS_SCRIPT_TEMPLATE = `function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    function writeTab(name, headers, rows) {
+      var sheet = ss.getSheetByName(name) || ss.insertSheet(name);
+      sheet.clearContents();
+      sheet.appendRow(headers);
+      if (rows && rows.length) {
+        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+      }
+      sheet.setFrozenRows(1);
+    }
+
+    writeTab('Products',
+      ['ID','Product Name','SKU','Category','Variant','Buying Price','Selling Price','Available Stock','Min Stock Alert','Description','Status'],
+      payload.tables.products
+    );
+    writeTab('Invoices',
+      ['Invoice No','Date','Due Date','Customer Name','Phone','Address','Items Count','Subtotal','Discount','Delivery','Extra Charge','Grand Total','Paid','Due','Payment Status','Payment Method','Cancelled','Notes'],
+      payload.tables.invoices
+    );
+    writeTab('Invoice_Items_Warranties',
+      ['Invoice No','Invoice Date','Customer Name','Phone','Product Name','SKU','Variant','Qty','Unit Price','Line Total','Warranty Type','Duration','Start Date','Expiry Date','Warranty Status','Terms'],
+      payload.tables.warranties
+    );
+    writeTab('Customers',
+      ['Customer ID','Name','Phone','Address','Total Invoices','Total Purchases','Total Paid','Total Due'],
+      payload.tables.customers
+    );
+    writeTab('Stock_History',
+      ['Date Time','Product Name','SKU','Stock Change','Resulting Stock','Reason'],
+      payload.tables.stockHistory
+    );
+
+    // Full lossless JSON backup split into safe cell chunks (45,000 chars per row)
+    var backupSheet = ss.getSheetByName('_Backup_JSON') || ss.insertSheet('_Backup_JSON');
+    backupSheet.clearContents();
+    backupSheet.appendRow(['SyncedAt', 'ChunkIndex', 'JsonChunk']);
+    var raw = payload.rawBackupJson || '';
+    var chunkSize = 45000;
+    var rows = [];
+    for (var i = 0; i < raw.length; i += chunkSize) {
+      rows.push([payload.syncedAt, rows.length, raw.slice(i, i + chunkSize)]);
+    }
+    if (rows.length) backupSheet.getRange(2, 1, rows.length, 3).setValues(rows);
+
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, syncedAt: payload.syncedAt }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('_Backup_JSON');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'No backup found in _Backup_JSON tab.' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    var jsonStr = vals.map(function(r) { return r[2]; }).join('');
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, syncedAt: vals[0][0], data: JSON.parse(jsonStr) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+    function buildDetailedSheetTables() {
+      const products = state.products.map(p => [
+        p.id, p.name, p.sku, p.category, p.variant || '',
+        Number(p.buyPrice) || 0, Number(p.sellPrice) || 0,
+        Number(p.stock) || 0, Number(p.minStock) || 0,
+        p.description || '', p.archived ? 'Archived' : (p.stock === 0 ? 'OUT OF STOCK' : p.stock <= p.minStock ? 'LOW STOCK' : 'IN STOCK')
+      ]);
+
+      const invoices = state.invoices.map(inv => [
+        inv.invoiceNumber, inv.date, inv.dueDate || '', inv.customerName, inv.customerPhone || '',
+        inv.customerAddress || '', (inv.items || []).length,
+        Number(inv.subtotal) || 0, Number(inv.discountAmount) || 0,
+        Number(inv.deliveryCharge) || 0, Number(inv.extraCharge) || 0,
+        Number(inv.grandTotal) || 0, Number(inv.paidAmount) || 0, Number(inv.dueAmount) || 0,
+        inv.cancelled ? 'Cancelled' : inv.paymentStatus, inv.paymentMethod || '',
+        inv.cancelled ? 'YES' : 'NO', inv.customerNotes || ''
+      ]);
+
+      const warranties = [];
+      state.invoices.forEach(inv => {
+        (inv.items || []).forEach(it => {
+          const ws = getWarrantyStatus(it);
+          warranties.push([
+            inv.invoiceNumber, inv.date, inv.customerName, inv.customerPhone || '',
+            it.name, it.sku, it.variant || '', Number(it.qty) || 0, Number(it.unitPrice) || 0, Number(it.total) || 0,
+            it.warrantyType || 'No Warranty', it.warrantyDurationLabel || 'None',
+            it.warrantyStart || '', it.warrantyExpiry || '', inv.cancelled ? 'CANCELLED' : ws.status, it.warrantyTerms || ''
+          ]);
+        });
+      });
+
+      const validInvs = state.invoices.filter(i => !i.cancelled);
+      const customers = state.customers.map(c => {
+        const custInvs = validInvs.filter(inv =>
+          (c.phone && inv.customerPhone && inv.customerPhone.trim() === c.phone.trim()) ||
+          inv.customerName.toLowerCase() === c.name.toLowerCase()
+        );
+        return [
+          c.id, c.name, c.phone || '', c.address || '', custInvs.length,
+          custInvs.reduce((s, i) => s + (Number(i.grandTotal) || 0), 0),
+          custInvs.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0),
+          custInvs.reduce((s, i) => s + (Number(i.dueAmount) || 0), 0)
+        ];
+      });
+
+      const stockHistory = state.stockHistory.map(h => [
+        h.date, h.productName, h.sku, Number(h.change) || 0, Number(h.newStock) || 0, h.reason || ''
+      ]);
+
+      return { products, invoices, warranties, customers, stockHistory };
+    }
+
+    async function syncToGoogleSheets() {
+      const url = document.getElementById('gsheet-url-input').value.trim();
+      if (!url || !url.startsWith('https://')) {
+        return showToast('Please enter a valid Google Apps Script Web App URL (https://...).', 'error');
+      }
+      state.settings.googleSheetWebhookUrl = url;
+      persist();
+
+      const btn = document.getElementById('gsheet-sync-btn');
+      btn.disabled = true;
+      showToast('Syncing detailed tables & backup to Google Sheets...', 'info');
+
+      try {
+        const syncedAt = new Date().toISOString();
+        const payload = {
+          syncedAt,
+          tables: buildDetailedSheetTables(),
+          rawBackupJson: JSON.stringify(state)
+        };
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({ ok: res.ok }));
+        if (json && json.ok === false) throw new Error(json.error || 'Sync failed');
+
+        state.settings.lastGoogleSheetSync = syncedAt;
+        persist();
+        renderSettings();
+        showToast('All detailed data & full backup synced to Google Sheets!');
+      } catch (err) {
+        showToast(`Google Sheets sync failed: ${err.message || 'Check URL & deployment access (Anyone)'}`, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function restoreFromGoogleSheets() {
+      const url = document.getElementById('gsheet-url-input').value.trim();
+      if (!url || !url.startsWith('https://')) {
+        return showToast('Please enter your Google Apps Script Web App URL first.', 'error');
+      }
+      state.settings.googleSheetWebhookUrl = url;
+      persist();
+
+      const btn = document.getElementById('gsheet-restore-btn');
+      btn.disabled = true;
+      showToast('Fetching backup from Google Sheets...', 'info');
+
+      try {
+        const sep = url.includes('?') ? '&' : '?';
+        const res = await fetch(`${url}${sep}action=backup&t=${Date.now()}`);
+        const json = await res.json();
+        if (!json || !json.ok || !json.data) {
+          throw new Error((json && json.error) || 'No valid backup found in Google Sheets.');
+        }
+        const candidate = json.data;
+        if (!Array.isArray(candidate.products) || !Array.isArray(candidate.invoices) || !candidate.settings) {
+          throw new Error('Backup format in Google Sheets is incomplete.');
+        }
+        askConfirm(
+          'Restore Backup from Google Sheets?',
+          `Found Google Sheets backup (${candidate.products.length} products, ${candidate.invoices.length} invoices, ${(candidate.customers || []).length} customers). Overwrite your current browser data?`,
+          () => {
+            state = {
+              version: 1,
+              isDemo: false,
+              demoBannerDismissed: true,
+              settings: { ...DEFAULT_SETTINGS, ...candidate.settings, googleSheetWebhookUrl: url },
+              products: candidate.products,
+              invoices: candidate.invoices,
+              customers: Array.isArray(candidate.customers) ? candidate.customers : [],
+              stockHistory: Array.isArray(candidate.stockHistory) ? candidate.stockHistory : []
+            };
+            persist();
+            applyThemeAndBranding();
+            renderSettings();
+            showToast('Backup restored from Google Sheets successfully!');
+          },
+          'Overwrite & Restore'
+        );
+      } catch (err) {
+        showToast(`Could not restore from Google Sheets: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function exportDetailedGoogleSheetsCsv() {
+      const tables = buildDetailedSheetTables();
+      const csvCell = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+      const sections = [
+        ['=== PRODUCTS ==='],
+        ['ID','Product Name','SKU','Category','Variant','Buying Price','Selling Price','Available Stock','Min Stock Alert','Description','Status'],
+        ...tables.products,
+        [''],
+        ['=== INVOICES ==='],
+        ['Invoice No','Date','Due Date','Customer Name','Phone','Address','Items Count','Subtotal','Discount','Delivery','Extra Charge','Grand Total','Paid','Due','Payment Status','Payment Method','Cancelled','Notes'],
+        ...tables.invoices,
+        [''],
+        ['=== INVOICE ITEMS & WARRANTIES ==='],
+        ['Invoice No','Invoice Date','Customer Name','Phone','Product Name','SKU','Variant','Qty','Unit Price','Line Total','Warranty Type','Duration','Start Date','Expiry Date','Warranty Status','Terms'],
+        ...tables.warranties,
+        [''],
+        ['=== CUSTOMERS ==='],
+        ['Customer ID','Name','Phone','Address','Total Invoices','Total Purchases','Total Paid','Total Due'],
+        ...tables.customers,
+        [''],
+        ['=== STOCK HISTORY ==='],
+        ['Date Time','Product Name','SKU','Stock Change','Resulting Stock','Reason'],
+        ...tables.stockHistory
+      ];
+      const csv = sections.map(row => row.map(csvCell).join(',')).join('\r\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stockflow-google-sheets-${todayISO()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Detailed Google Sheets CSV downloaded.');
+    }
+
+    function openGoogleSheetSetupModal() {
+      document.getElementById('gsheet-apps-script-code').value = GOOGLE_APPS_SCRIPT_TEMPLATE;
+      openModal('modal-gsheet-setup');
+    }
+
+    function copyAppsScriptCode() {
+      const ta = document.getElementById('gsheet-apps-script-code');
+      const text = ta.value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          () => showToast('Apps Script code copied! Paste it into Google Sheets → Extensions → Apps Script.'),
+          () => { ta.select(); document.execCommand('copy'); showToast('Apps Script code copied!'); }
+        );
+      } else {
+        ta.select();
+        document.execCommand('copy');
+        showToast('Apps Script code copied!');
+      }
     }
 
     /* =========================================================================
@@ -4556,9 +4920,10 @@
 
       document.getElementById('save-invoice-btn').addEventListener('click', saveInvoice);
 
-      // Print & Save PDF
+      // Print, Save PDF & Save JPG
       document.getElementById('btn-print-invoice').addEventListener('click', () => printCurrentInvoice(false));
       document.getElementById('btn-save-pdf-invoice').addEventListener('click', () => printCurrentInvoice(true));
+      document.getElementById('btn-save-jpg-invoice').addEventListener('click', saveCurrentInvoiceAsJpg);
 
       // Invoice history filters & payments
       ['inv-hist-search', 'inv-hist-status', 'inv-hist-from', 'inv-hist-to'].forEach(id => {
@@ -4607,6 +4972,15 @@
       document.getElementById('backup-import-input').addEventListener('change', e => {
         handleImportBackupFile(e.target.files[0]);
       });
+      document.getElementById('gsheet-url-input').addEventListener('change', e => {
+        state.settings.googleSheetWebhookUrl = e.target.value.trim();
+        persist();
+      });
+      document.getElementById('gsheet-sync-btn').addEventListener('click', syncToGoogleSheets);
+      document.getElementById('gsheet-restore-btn').addEventListener('click', restoreFromGoogleSheets);
+      document.getElementById('gsheet-csv-btn').addEventListener('click', exportDetailedGoogleSheetsCsv);
+      document.getElementById('gsheet-setup-btn').addEventListener('click', openGoogleSheetSetupModal);
+      document.getElementById('copy-apps-script-btn').addEventListener('click', copyAppsScriptCode);
       document.getElementById('load-sample-btn').addEventListener('click', () => {
         askConfirm('Load Demo Data?', 'Replace current records with starter demo products and invoices? Your custom seller settings will be preserved.', () => {
           const savedSettings = { ...state.settings };
